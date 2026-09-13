@@ -8,6 +8,7 @@ import { CreateBillDialog } from '@/components/finances/create-bill-dialog'
 import { CreateExpenseDialog } from '@/components/finances/create-expense-dialog'
 import { PaymentReconciliation, PaymentMethodItem, PaymentTransaction } from '@/components/finances/payment-reconciliation'
 import { ExpensesTable, ExpenseItem } from '@/components/finances/expenses-table'
+import { SavingsTargetsCard } from '@/components/finances/savings-targets-card'
 import { TrendingDown, FileText, CreditCard, FileSpreadsheet, Plus } from 'lucide-react'
 
 export default async function FinancesPage() {
@@ -143,8 +144,8 @@ export default async function FinancesPage() {
   return (
     <AdminShell>
       <Navbar
-        title="Finanzas, Cuentas & P&L"
-        description="Estado de Pérdidas y Ganancias en tiempo real, cuentas por pagar a proveedores y conciliación de pasarelas"
+        title="Ganancias y Finanzas"
+        description="Ingresos por ventas, cuentas por pagar a proveedores y ganancias netas del negocio"
         actions={
           <div className="flex items-center gap-2">
             <CreateExpenseDialog />
@@ -154,6 +155,13 @@ export default async function FinancesPage() {
       />
 
       <main className="p-6 space-y-6 max-w-7xl">
+        {/* Metas Financieras & Objetivos de Ahorro (Savings Targets) */}
+        <SavingsTargetsCard
+          currentSales={totalRevenue}
+          pendingBillsAmount={bills.filter((b) => b.status === 'pending').reduce((acc, curr) => acc + curr.amount, 0)}
+          currentFoodCostPct={totalRevenue > 0 ? (totalFoodCost / totalRevenue) * 100 : 28.5}
+        />
+
         <Tabs defaultValue="pl" className="w-full space-y-6">
           <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full max-w-2xl">
             <TabsTrigger value="pl" className="gap-1.5 text-xs">

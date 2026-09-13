@@ -69,10 +69,13 @@ export function PayOrderDialog({
 
   const total = order.total || 0
   const totalBs = convertUsdToBs(total, bcvRate)
-  const isCash = paymentMethod === 'Efectivo USD'
+  const isCashUSD = paymentMethod === 'Efectivo USD'
+  const isCashBs = paymentMethod === 'Efectivo Bs'
+  const isCash = isCashUSD || isCashBs
   const isCredit = paymentMethod === 'Crédito'
   const numericTendered = parseFloat(cashTendered) || 0
-  const changeDue = Math.max(0, numericTendered - total)
+  const changeDueUSD = Math.max(0, numericTendered - total)
+  const changeDueBs = Math.max(0, numericTendered - totalBs)
 
   const selectedCustomer = customers.find((c) => c.id === selectedCustomerId) || null
 
@@ -95,11 +98,19 @@ export function PayOrderDialog({
     setLoading(true)
 
     try {
+      const defaultRef = isCredit
+        ? 'VENTA-A-CREDITO'
+        : isCashUSD
+        ? 'POS-EFECTIVO-USD'
+        : isCashBs
+        ? 'POS-EFECTIVO-BS'
+        : referenceNumber.trim()
+
       await payActiveOrderAction({
         orderId: order.id,
         paymentMethodName: paymentMethod,
         total,
-        referenceNumber: isCredit ? 'VENTA-A-CREDITO' : !isCash ? referenceNumber.trim() : 'POS-EFECTIVO',
+        referenceNumber: defaultRef,
         customerId: selectedCustomerId || order.customer_id || null,
       })
 
@@ -126,11 +137,11 @@ export function PayOrderDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-2 text-xs">
-          {/* Monto Total en USD y en Bolívares (Tasa BCV) */}
+          {/* Monto Total: $ Principal y Bolívares Secundario */}
           <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20 space-y-1">
             <div className="flex items-center justify-between">
               <span className="font-semibold text-foreground text-xs">Total a Cobrar:</span>
-              <span className="font-mono font-black text-2xl text-primary">${total.toFixed(2)}</span>
+              <span className="font-mono font-black text-2xl sm:text-3xl text-primary">${total.toFixed(2)}</span>
             </div>
             <div className="flex items-center justify-between pt-1 border-t border-primary/20 text-xs">
               <span className="text-muted-foreground">Equivalente BCV ({bcvRate.toFixed(2)} Bs/$):</span>
@@ -141,13 +152,14 @@ export function PayOrderDialog({
           {/* Método de Pago */}
           <div className="space-y-2">
             <label className="font-semibold text-foreground">Seleccionar Método de Pago:</label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {[
-                { name: 'Efectivo USD', icon: Banknote },
-                { name: 'Pago Móvil', icon: Smartphone },
-                { name: 'Zelle', icon: Smartphone },
-                { name: 'Punto de Venta / Tarjeta', icon: CreditCard },
-                { name: 'Crédito', label: '💳 Venta a Crédito', highlight: true },
+                { name: 'Efectivo USD', icon: Banknote, label: '💵 Efectivo $' },
+                { name: 'Efectivo Bs', icon: Banknote, label: '🇻🇪 Efectivo Bs' },
+                { name: 'Pago Móvil', icon: Smartphone, label: '🏦 Pago Móvil' },
+                { name: 'Punto de Venta / Tarjeta', icon: CreditCard, label: '💳 Punto / Tarjeta' },
+                { name: 'Zelle', icon: Smartphone, label: '📱 Zelle ($)' },
+                { name: 'Crédito', icon: Coins, label: '👥 Venta Crédito', highlight: true },
               ].map((m) => (
                 <button
                   key={m.name}
@@ -155,8 +167,9 @@ export function PayOrderDialog({
                   onClick={() => {
                     setPaymentMethod(m.name)
                     setRefError('')
+                    setCashTendered('')
                   }}
-                  className={`flex items-center gap-2 p-3 rounded-xl border text-xs font-semibold transition-all active:scale-95 ${
+                  className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-semibold transition-all active:scale-95 ${
                     paymentMethod === m.name
                       ? 'border-primary bg-primary text-primary-foreground shadow-xs'
                       : m.highlight
@@ -226,10 +239,10 @@ export function PayOrderDialog({
           )}
 
           {/* Calculadora de Vuelto para Efectivo USD */}
-          {isCash && (
+          {isCashUSD && (
             <div className="p-3.5 rounded-xl border bg-muted/20 space-y-2.5">
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-foreground">Monto Recibido:</span>
+                <span className="font-semibold text-foreground">Dólares Recibidos ($):</span>
                 <div className="relative w-32">
                   <span className="absolute left-2.5 top-1/2 -translate-y-1/2 font-mono text-muted-foreground">$</span>
                   <Input
@@ -264,9 +277,47 @@ export function PayOrderDialog({
 
               {numericTendered >= total && (
                 <div className="flex items-center justify-between pt-2 border-t text-xs">
-                  <span className="font-bold text-emerald-700 dark:text-emerald-300">Cambio a entregar:</span>
+                  <span className="font-bold text-emerald-700 dark:text-emerald-300">Vuelto a entregar ($):</span>
                   <span className="font-mono font-black text-sm text-emerald-700 dark:text-emerald-300">
-                    ${changeDue.toFixed(2)}
+                    ${changeDueUSD.toFixed(2)}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Calculadora de Vuelto para Efectivo Bs */}
+          {isCashBs && (
+            <div className="p-3.5 rounded-xl border bg-muted/20 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-foreground">Bolívares Recibidos (Bs):</span>
+                <div className="relative w-36">
+                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 font-mono text-muted-foreground text-[10px]">Bs.</span>
+                  <Input
+                    type="number"
+                    placeholder="0.00"
+                    value={cashTendered}
+                    onChange={(e) => setCashTendered(e.target.value)}
+                    className="h-8 pl-8 text-xs font-mono font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setCashTendered(totalBs.toFixed(2))}
+                  className="text-[11px] px-2.5 py-1 rounded-lg bg-card border font-mono font-semibold hover:border-primary transition-colors"
+                >
+                  Exacto (Bs. {totalBs.toFixed(2)})
+                </button>
+              </div>
+
+              {numericTendered >= totalBs && (
+                <div className="flex items-center justify-between pt-2 border-t text-xs">
+                  <span className="font-bold text-emerald-700 dark:text-emerald-300">Vuelto a entregar (Bs):</span>
+                  <span className="font-mono font-black text-sm text-emerald-700 dark:text-emerald-300">
+                    Bs. {changeDueBs.toFixed(2)}
                   </span>
                 </div>
               )}

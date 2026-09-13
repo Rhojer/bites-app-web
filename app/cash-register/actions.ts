@@ -10,6 +10,8 @@ export async function createCashExpenseAction(formData: FormData) {
   const category = (formData.get('category') as string) || 'Otros'
   const recipient = (formData.get('recipient') as string) || ''
   const notes = (formData.get('notes') as string) || ''
+  const vault = (formData.get('vault') as string) || 'cash_usd'
+  const currency = vault === 'cash_usd' ? 'USD' : 'VES'
 
   if (amount <= 0 || !notes) {
     throw new Error('El monto debe ser mayor a cero y la nota de justificación es obligatoria.')
@@ -21,7 +23,7 @@ export async function createCashExpenseAction(formData: FormData) {
     category,
     recipient,
     notes,
-    currency: 'USD',
+    currency,
   })
 
   // 2. También registrar en la tabla general de gastos (expenses) para el balance P&L

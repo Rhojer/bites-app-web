@@ -22,8 +22,8 @@ export default function SettingsPage() {
   return (
     <AdminShell>
       <Navbar
-        title="Configuración del Sistema"
-        description="Parámetros operativos del restaurante, preferencias de KDS y punto de venta"
+        title="Ajustes del Restaurante"
+        description="Nombre del local, moneda, preferencias de cocina y personalización"
       />
 
       <main className="p-4 sm:p-6 space-y-6 max-w-5xl">

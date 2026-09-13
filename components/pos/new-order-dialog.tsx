@@ -35,6 +35,7 @@ import {
 import { processOrderAction, CartItemInput } from '@/app/pos/actions'
 import { formatBs, convertUsdToBs } from '@/lib/bcv'
 import { CustomerSelector, CustomerOption } from '@/components/pos/customer-selector'
+import { ButtonGroup, ButtonGroupItem } from '@/components/ui/button-group'
 
 interface RecipeItem {
   id: string
@@ -254,18 +255,18 @@ export function NewOrderDialog({
         }
       />
 
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col p-6 rounded-2xl">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col p-5 sm:p-6 rounded-2xl">
         <DialogHeader className="pb-3 border-b shrink-0">
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-lg font-bold flex items-center gap-2">
-              <span>🍔 Tomar Nuevo Pedido / Comanda</span>
+            <DialogTitle className="text-lg font-extrabold flex items-center gap-2 text-foreground">
+              <span>Nuevo Pedido / Comanda</span>
             </DialogTitle>
-            <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-primary/10 text-primary border border-primary/20">
+            <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-muted text-foreground border">
               BCV: Bs. {bcvRate.toFixed(2)}
             </span>
           </div>
-          <DialogDescription className="text-xs">
-            Selecciona el tipo de comanda, cliente registrado y los platos deseados.
+          <DialogDescription className="text-xs text-muted-foreground">
+            Abre una comanda seleccionando el tipo de servicio, cliente y platos del menú.
           </DialogDescription>
         </DialogHeader>
 
@@ -276,50 +277,37 @@ export function NewOrderDialog({
           <div className="lg:col-span-7 space-y-4">
             
             {/* Tipo de Pedido */}
-            <div className="p-3 bg-muted/30 rounded-2xl border space-y-3">
-              <label className="text-xs font-bold text-foreground">Tipo de Pedido:</label>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setOrderType('dine_in')}
-                  className={`py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-95 ${
-                    orderType === 'dine_in'
-                      ? 'bg-primary text-primary-foreground shadow-xs'
-                      : 'bg-card border text-muted-foreground hover:bg-muted/50'
-                  }`}
-                >
-                  <span>🍽️</span>
-                  <span>Salón / Mesa</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setOrderType('takeaway')}
-                  className={`py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-95 ${
-                    orderType === 'takeaway'
-                      ? 'bg-primary text-primary-foreground shadow-xs'
-                      : 'bg-card border text-muted-foreground hover:bg-muted/50'
-                  }`}
-                >
-                  <span>🛍️</span>
-                  <span>Para Llevar</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setOrderType('delivery')}
-                  className={`py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-95 ${
-                    orderType === 'delivery'
-                      ? 'bg-primary text-primary-foreground shadow-xs'
-                      : 'bg-card border text-muted-foreground hover:bg-muted/50'
-                  }`}
-                >
-                  <span>🛵</span>
-                  <span>Delivery</span>
-                </button>
+            <div className="p-3.5 bg-muted/30 rounded-2xl border space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-foreground">Tipo de Pedido:</label>
+                <ButtonGroup className="w-72 grid grid-cols-3">
+                  <ButtonGroupItem
+                    active={orderType === 'dine_in'}
+                    onClick={() => setOrderType('dine_in')}
+                    className="py-1.5 px-2 text-xs"
+                  >
+                    🍽️ Salón
+                  </ButtonGroupItem>
+                  <ButtonGroupItem
+                    active={orderType === 'takeaway'}
+                    onClick={() => setOrderType('takeaway')}
+                    className="py-1.5 px-2 text-xs"
+                  >
+                    🛍️ Llevar
+                  </ButtonGroupItem>
+                  <ButtonGroupItem
+                    active={orderType === 'delivery'}
+                    onClick={() => setOrderType('delivery')}
+                    className="py-1.5 px-2 text-xs"
+                  >
+                    🛵 Delivery
+                  </ButtonGroupItem>
+                </ButtonGroup>
               </div>
 
               {/* Si es Salón: Selector de Mesas */}
               {orderType === 'dine_in' && (
-                <div className="space-y-1.5 pt-1">
+                <div className="space-y-1.5 pt-1 border-t border-border/50">
                   <label className="text-[11px] font-semibold text-muted-foreground">Mesa asignada:</label>
                   <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
                     {tables.map((tbl) => (
@@ -341,7 +329,7 @@ export function NewOrderDialog({
               )}
 
               {/* Selector de Cliente Registrado / Manual */}
-              <div className="pt-1">
+              <div className="pt-2 border-t border-border/50">
                 <CustomerSelector
                   customers={customers}
                   selectedCustomerId={selectedCustomerId}
@@ -361,14 +349,14 @@ export function NewOrderDialog({
             {/* Catálogo de Platos con Precios Duales (USD y Bs) */}
             <div className="space-y-2.5">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-bold text-foreground">Seleccionar Platos del Menú:</span>
+                <span className="text-xs font-bold text-foreground">Platos del Menú:</span>
                 <div className="relative w-48">
                   <Search className="size-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     placeholder="Buscar plato..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="h-8 pl-8 text-xs bg-muted/20"
+                    className="h-8 pl-8 text-xs bg-muted/20 rounded-lg"
                   />
                 </div>
               </div>
@@ -378,10 +366,10 @@ export function NewOrderDialog({
                 <button
                   type="button"
                   onClick={() => setSelectedCategory('ALL')}
-                  className={`text-xs px-3 py-1 rounded-lg font-medium whitespace-nowrap transition-colors ${
+                  className={`text-xs px-3 py-1 rounded-lg font-semibold whitespace-nowrap transition-colors ${
                     selectedCategory === 'ALL'
-                      ? 'bg-foreground text-background font-semibold'
-                      : 'bg-muted/60 text-muted-foreground hover:bg-muted'
+                      ? 'bg-foreground text-background shadow-2xs'
+                      : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
                   }`}
                 >
                   Todos ({finalRecipes.length})
@@ -391,10 +379,10 @@ export function NewOrderDialog({
                     key={c}
                     type="button"
                     onClick={() => setSelectedCategory(c)}
-                    className={`text-xs px-3 py-1 rounded-lg font-medium whitespace-nowrap transition-colors ${
+                    className={`text-xs px-3 py-1 rounded-lg font-semibold whitespace-nowrap transition-colors ${
                       selectedCategory === c
-                        ? 'bg-foreground text-background font-semibold'
-                        : 'bg-muted/60 text-muted-foreground hover:bg-muted'
+                        ? 'bg-foreground text-background shadow-2xs'
+                        : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
                     }`}
                   >
                     {c}
@@ -403,7 +391,7 @@ export function NewOrderDialog({
               </div>
 
               {/* Grid de Platos */}
-              <div className="grid grid-cols-2 gap-2 max-h-[240px] overflow-y-auto pr-1">
+              <div className="grid grid-cols-2 gap-2.5 max-h-[250px] overflow-y-auto pr-1">
                 {filteredRecipes.map((dish) => {
                   const inCart = cart.find((i) => i.recipe_id === dish.id)
                   const priceBs = convertUsdToBs(dish.price, bcvRate)
@@ -412,23 +400,23 @@ export function NewOrderDialog({
                       key={dish.id}
                       type="button"
                       onClick={() => addToCart(dish)}
-                      className={`p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all active:scale-[0.98] ${
+                      className={`p-3 rounded-xl border text-left flex flex-col justify-between transition-all duration-150 active:scale-[0.98] ${
                         inCart
-                          ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                          : 'border-border bg-card hover:border-primary/40'
+                          ? 'border-primary bg-primary/5 ring-1 ring-primary shadow-2xs'
+                          : 'border-border bg-card hover:border-primary/40 hover:shadow-2xs'
                       }`}
                     >
                       <div>
-                        <Badge variant="outline" className="text-[9px] mb-1 px-1.5 py-0">
+                        <span className="text-[10px] text-muted-foreground font-semibold block mb-0.5">
                           {dish.category}
-                        </Badge>
-                        <p className="font-bold text-xs text-foreground leading-tight line-clamp-2">
+                        </span>
+                        <p className="font-bold text-xs sm:text-sm text-foreground leading-tight line-clamp-2">
                           {dish.name}
                         </p>
                       </div>
-                      <div className="mt-2 flex items-end justify-between pt-1 border-t border-border/40">
+                      <div className="mt-2.5 flex items-end justify-between pt-1.5 border-t border-border/40">
                         <div>
-                          <span className="font-mono font-black text-xs text-primary block leading-none">
+                          <span className="font-mono font-extrabold text-xs sm:text-sm text-foreground block leading-none">
                             ${dish.price.toFixed(2)}
                           </span>
                           <span className="font-mono text-[10px] text-muted-foreground font-medium leading-tight">
@@ -436,11 +424,13 @@ export function NewOrderDialog({
                           </span>
                         </div>
                         {inCart ? (
-                          <span className="size-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold">
+                          <span className="size-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold font-mono">
                             {inCart.quantity}
                           </span>
                         ) : (
-                          <Plus className="size-3.5 text-muted-foreground" />
+                          <span className="size-6 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
+                            <Plus className="size-3.5" />
+                          </span>
                         )}
                       </div>
                     </button>
@@ -557,13 +547,14 @@ export function NewOrderDialog({
               {isPayingNow && (
                 <div className="p-3 rounded-xl border bg-card space-y-2 text-xs">
                   <span className="font-bold text-foreground block">Método de Cobro:</span>
-                  <div className="grid grid-cols-2 gap-1.5">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                     {[
-                      { name: 'Efectivo USD', icon: Banknote },
-                      { name: 'Pago Móvil', icon: Smartphone },
-                      { name: 'Zelle', icon: Smartphone },
-                      { name: 'Punto de Venta / Tarjeta', icon: CreditCard },
-                      { name: 'Crédito', label: '💳 Venta a Crédito', highlight: true },
+                      { name: 'Efectivo USD', label: '💵 Efectivo $' },
+                      { name: 'Efectivo Bs', label: '🇻🇪 Efectivo Bs' },
+                      { name: 'Pago Móvil', label: '🏦 Pago Móvil' },
+                      { name: 'Punto de Venta / Tarjeta', label: '💳 Punto / Tarjeta' },
+                      { name: 'Zelle', label: '📱 Zelle ($)' },
+                      { name: 'Crédito', label: '👥 Crédito', highlight: true },
                     ].map((m) => (
                       <button
                         key={m.name}

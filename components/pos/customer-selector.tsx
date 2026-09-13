@@ -5,6 +5,8 @@ import { User, Users, Search, Check, Plus, AlertTriangle, ShieldCheck, DollarSig
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Combobox, ComboboxOption } from '@/components/ui/combobox'
+import { ButtonGroup, ButtonGroupItem } from '@/components/ui/button-group'
 
 export interface CustomerOption {
   id: string
@@ -37,26 +39,24 @@ export function CustomerSelector({
   const [mode, setMode] = useState<'registered' | 'guest'>(
     isCreditSale || selectedCustomerId || customers.length > 0 ? 'registered' : 'guest'
   )
-  const [searchTerm, setSearchTerm] = useState('')
 
   const selectedCustomer = customers.find((c) => c.id === selectedCustomerId) || null
-
-  const filteredCustomers = customers.filter((c) => {
-    if (!c.full_name) return false
-    const nameMatch = c.full_name.toLowerCase().includes(searchTerm.toLowerCase())
-    const phoneMatch = c.phone ? c.phone.includes(searchTerm) : false
-    return nameMatch || phoneMatch
-  })
 
   const currentDebt = selectedCustomer?.current_debt || 0
   const creditLimit = selectedCustomer?.credit_limit || 0
   const availableCredit = Math.max(0, creditLimit - currentDebt)
-  const remainingAfterSale = creditLimit - (currentDebt + totalAmount)
   const exceedsCredit = isCreditSale && creditLimit > 0 && currentDebt + totalAmount > creditLimit
+
+  const comboboxOptions: ComboboxOption[] = customers.map((c) => ({
+    value: c.id,
+    label: c.full_name || 'Sin nombre',
+    description: `${c.phone ? `${c.phone} • ` : ''}Deuda: $${(c.current_debt || 0).toFixed(2)} | Límite: $${(c.credit_limit || 0).toFixed(2)}`,
+    metadata: { customer: c }
+  }))
 
   return (
     <div className="space-y-2.5">
-      {/* Encabezado y Selector de Modo */}
+      {/* Encabezado y Selector de Modo con ButtonGroup */}
       <div className="flex items-center justify-between">
         <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
           <User className="size-3.5 text-primary" />
@@ -69,35 +69,25 @@ export function CustomerSelector({
         </label>
 
         {!isCreditSale && (
-          <div className="flex items-center gap-1 bg-muted/60 p-0.5 rounded-lg border">
-            <button
-              type="button"
-              onClick={() => {
-                setMode('registered')
-              }}
-              className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all ${
-                mode === 'registered'
-                  ? 'bg-card text-foreground shadow-xs'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
+          <ButtonGroup>
+            <ButtonGroupItem
+              active={mode === 'registered'}
+              onClick={() => setMode('registered')}
+              className="py-1 px-2.5 text-[11px]"
             >
               👥 Registrado ({customers.length})
-            </button>
-            <button
-              type="button"
+            </ButtonGroupItem>
+            <ButtonGroupItem
+              active={mode === 'guest'}
               onClick={() => {
                 setMode('guest')
                 onSelectCustomer(null)
               }}
-              className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all ${
-                mode === 'guest'
-                  ? 'bg-card text-foreground shadow-xs'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
+              className="py-1 px-2.5 text-[11px]"
             >
               ✍️ Ocasional
-            </button>
-          </div>
+            </ButtonGroupItem>
+          </ButtonGroup>
         )}
       </div>
 
@@ -168,61 +158,64 @@ export function CustomerSelector({
               )}
             </div>
           ) : (
-            /* Lista y Selector Desplegable de Clientes */
+            /* Combobox Autocomplete con Buscador y Saldo */
             <div className="space-y-2">
-              {/* Selector Select Directo */}
-              <div className="relative">
-                <select
-                  value={selectedCustomerId || ''}
-                  onChange={(e) => {
-                    const cust = customers.find((c) => c.id === e.target.value) || null
-                    onSelectCustomer(cust)
-                    if (cust?.full_name) onChangeCustomName(cust.full_name)
-                  }}
-                  className="w-full h-9 rounded-xl border border-input bg-card px-3 text-xs font-semibold text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary shadow-xs cursor-pointer"
-                >
-                  <option value="">-- Seleccionar Cliente Registrado ({customers.length} disponibles) --</option>
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.full_name} {c.phone ? `(${c.phone})` : ''} - Deuda: ${(c.current_debt || 0).toFixed(2)} / Límite: ${(c.credit_limit || 0).toFixed(2)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Buscador Rápido y Chips */}
-              <div className="space-y-1.5">
-                <div className="relative">
-                  <Search className="size-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="Filtrar clientes por nombre o teléfono..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="h-8 pl-8 text-xs bg-muted/20"
-                  />
-                </div>
-
-                {/* Chips de Selección Rápida con 1 Clic */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                  {filteredCustomers.slice(0, 6).map((cust) => (
-                    <button
-                      key={cust.id}
-                      type="button"
-                      onClick={() => {
-                        onSelectCustomer(cust)
-                        onChangeCustomName(cust.full_name || '')
-                      }}
-                      className="text-[10px] px-2.5 py-1 rounded-lg border bg-card hover:bg-primary/10 hover:border-primary/50 text-foreground font-semibold shrink-0 transition-colors flex items-center gap-1"
-                    >
-                      <span>👤 {cust.full_name}</span>
-                      {(cust.current_debt || 0) > 0 && (
-                        <span className="text-amber-600 font-mono text-[9px]">
-                          (${(cust.current_debt || 0).toFixed(0)})
+              <Combobox
+                options={comboboxOptions}
+                value={selectedCustomerId}
+                onChange={(val, opt) => {
+                  const cust = customers.find((c) => c.id === val) || null
+                  onSelectCustomer(cust)
+                  if (cust?.full_name) onChangeCustomName(cust.full_name)
+                }}
+                placeholder="🔍 Seleccionar o buscar cliente registrado..."
+                searchPlaceholder="Escribe nombre o teléfono del cliente..."
+                emptyText="No se encontró ningún cliente con ese nombre."
+                renderItem={(opt) => {
+                  const cust = (opt.metadata?.customer as CustomerOption) || null
+                  return (
+                    <div className="flex items-center justify-between w-full py-0.5">
+                      <div className="flex flex-col min-w-0 pr-2">
+                        <span className="font-bold text-xs text-foreground truncate">{opt.label}</span>
+                        {cust?.phone && (
+                          <span className="text-[10px] text-muted-foreground">{cust.phone}</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0 text-[10px] font-mono">
+                        {(cust?.current_debt || 0) > 0 && (
+                          <Badge variant="secondary" className="text-[9px] px-1 py-0 bg-amber-500/10 text-amber-600 border-amber-500/20 font-bold">
+                            Deuda: ${(cust?.current_debt || 0).toFixed(0)}
+                          </Badge>
+                        )}
+                        <span className="text-muted-foreground">
+                          Lím: ${(cust?.credit_limit || 0).toFixed(0)}
                         </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
+                      </div>
+                    </div>
+                  )
+                }}
+              />
+
+              {/* Chips de Selección Rápida en 1 Clic */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
+                {customers.slice(0, 5).map((cust) => (
+                  <button
+                    key={cust.id}
+                    type="button"
+                    onClick={() => {
+                      onSelectCustomer(cust)
+                      onChangeCustomName(cust.full_name || '')
+                    }}
+                    className="text-[10px] px-2.5 py-1 rounded-lg border bg-card hover:bg-primary/10 hover:border-primary/50 text-foreground font-semibold shrink-0 transition-colors flex items-center gap-1"
+                  >
+                    <span>👤 {cust.full_name}</span>
+                    {(cust.current_debt || 0) > 0 && (
+                      <span className="text-amber-600 font-mono text-[9px]">
+                        (${(cust.current_debt || 0).toFixed(0)})
+                      </span>
+                    )}
+                  </button>
+                ))}
               </div>
             </div>
           )}

@@ -160,130 +160,126 @@ export function ActiveOrdersList({ orders, customers = [] }: ActiveOrdersListPro
             const isDelivered = ord.kitchen_status === 'delivered'
 
             return (
-              <Card
+              <div
                 key={ord.id}
-                className={`border rounded-2xl shadow-xs transition-all overflow-hidden flex flex-col justify-between ${
+                className={`rounded-2xl border transition-all duration-200 overflow-hidden flex flex-col justify-between shadow-2xs hover:shadow-xs ${
                   isCredit
-                    ? 'border-indigo-500/40 bg-indigo-500/5'
+                    ? 'border-indigo-500/30 bg-card'
                     : isUnpaid
-                    ? 'border-amber-500/40 bg-amber-500/5'
-                    : 'bg-card'
+                    ? 'border-amber-500/30 bg-card'
+                    : 'border-border bg-card'
                 }`}
               >
-                <CardHeader className="p-4 pb-2 border-b bg-muted/20">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-xs text-foreground">
-                          #{ord.id.slice(0, 8)}
-                        </span>
-                        <Badge
-                          variant="outline"
-                          className="text-[10px] px-2 py-0 font-semibold"
-                        >
-                          {ord.type === 'dine_in' ? '🍽️ Salón' : ord.type === 'takeaway' ? '🛍️ Para Llevar' : '🛵 Delivery'}
-                        </Badge>
-                      </div>
-                      <p className="font-bold text-sm text-foreground mt-1">
-                        {ord.customer_name || (ord.table_number ? `Mesa ${ord.table_number}` : 'Cliente')}
-                      </p>
+                {/* Cabecera Limpia del Ticket */}
+                <div className="p-4 pb-3 border-b bg-muted/25 flex items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-xs text-muted-foreground">
+                        #{ord.id.slice(0, 6).toUpperCase()}
+                      </span>
+                      <span className="text-[11px] font-medium text-muted-foreground">
+                        {ord.type === 'dine_in' ? '🍽️ Salón' : ord.type === 'takeaway' ? '🛍️ Para Llevar' : '🛵 Delivery'}
+                      </span>
                     </div>
-
-                    <div className="text-right space-y-1">
-                      <div className="flex items-center gap-1 text-[11px] text-muted-foreground font-mono">
-                        <Clock className="size-3" />
-                        <span>hace {elapsed} min</span>
-                      </div>
-                      {isCredit ? (
-                        <Badge className="bg-indigo-600 text-white text-[10px] font-bold">
-                          A Crédito (Deuda)
-                        </Badge>
-                      ) : isUnpaid ? (
-                        <Badge className="bg-amber-500 text-black text-[10px] font-bold">
-                          Por Cobrar
-                        </Badge>
-                      ) : (
-                        <Badge className="bg-emerald-600 text-white text-[10px] font-bold">
-                          Pagado
-                        </Badge>
-                      )}
-                    </div>
+                    <p className="font-bold text-base text-foreground mt-0.5 tracking-tight">
+                      {ord.customer_name || (ord.table_number ? `Mesa ${ord.table_number}` : 'Cliente')}
+                    </p>
                   </div>
-                </CardHeader>
 
-                <CardContent className="p-4 space-y-3 flex-1 flex flex-col justify-between">
-                  {/* Lista de Platos */}
-                  <div className="space-y-1.5 flex-1">
+                  <div className="text-right space-y-1 shrink-0">
+                    {isCredit ? (
+                      <Badge className="bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5">
+                        A Crédito
+                      </Badge>
+                    ) : isUnpaid ? (
+                      <Badge className="bg-amber-500 text-black text-[10px] font-bold px-2 py-0.5">
+                        Por Cobrar
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5">
+                        Pagado
+                      </Badge>
+                    )}
+                    <span className="text-[11px] text-muted-foreground font-mono block">
+                      hace {elapsed}m
+                    </span>
+                  </div>
+                </div>
+
+                {/* Lista de Platos Limpia y Espaciosa */}
+                <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
+                  <div className="space-y-2.5">
                     {ord.items.map((it, idx) => (
-                      <div key={idx} className="flex items-start justify-between text-xs py-1 border-b border-border/30 last:border-0">
-                        <div className="space-y-0.5">
-                          <span className="font-bold text-foreground">
-                            {it.quantity}x {it.recipe_name}
-                          </span>
+                      <div key={idx} className="flex items-start justify-between text-xs gap-2">
+                        <div className="space-y-0.5 min-w-0">
+                          <p className="font-semibold text-foreground text-xs leading-snug">
+                            <span className="font-mono font-bold text-primary mr-1.5">{it.quantity}x</span>
+                            {it.recipe_name}
+                          </p>
                           {it.notes && (
-                            <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
-                              📝 {it.notes}
+                            <p className="text-[11px] text-amber-700 dark:text-amber-300 font-medium pl-4">
+                              ↳ {it.notes}
                             </p>
                           )}
                         </div>
-                        <span className="font-mono text-muted-foreground shrink-0 font-medium">
+                        <span className="font-mono text-muted-foreground font-medium shrink-0">
                           ${(it.quantity * it.unit_price).toFixed(2)}
                         </span>
                       </div>
                     ))}
                   </div>
 
-                  {/* Total y Estado Operativo */}
-                  <div className="pt-2 border-t space-y-2.5">
-                    <div className="flex items-center justify-between">
+                  {/* Total & Botones de Acción */}
+                  <div className="pt-3 border-t space-y-3 mt-auto">
+                    <div className="flex items-baseline justify-between">
                       <span className="text-xs text-muted-foreground font-medium">Total comanda:</span>
-                      <span className="font-mono font-black text-base text-primary">
+                      <span className="font-mono font-black text-lg text-foreground">
                         ${ord.total.toFixed(2)}
                       </span>
                     </div>
 
-                    {/* Acciones para la Dueña / Cajera */}
-                    <div className="grid grid-cols-2 gap-2 pt-1">
+                    {/* Botones de Control con Jerarquía Clara */}
+                    <div className="grid grid-cols-2 gap-2">
                       {isUnpaid ? (
                         <Button
                           size="sm"
                           onClick={() => setPayingOrder(ord)}
-                          className="font-bold text-xs h-9 rounded-xl shadow-xs gap-1.5"
+                          className="font-bold text-xs h-9 rounded-xl shadow-xs gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
                         >
                           <DollarSign className="size-4" />
-                          <span>Cobrar (${ord.total.toFixed(2)})</span>
+                          <span>Cobrar</span>
                         </Button>
                       ) : isCredit ? (
                         <Button
                           size="sm"
                           variant="outline"
                           disabled
-                          className="text-xs h-9 rounded-xl text-indigo-700 dark:text-indigo-300 border-indigo-500/30 gap-1 font-semibold"
+                          className="text-xs h-9 rounded-xl text-indigo-600 dark:text-indigo-400 border-indigo-500/30 gap-1 font-semibold"
                         >
                           <Coins className="size-3.5" />
-                          <span>Cargado a Deuda</span>
+                          <span>En Deuda</span>
                         </Button>
                       ) : (
                         <Button
                           size="sm"
                           variant="outline"
                           disabled
-                          className="text-xs h-9 rounded-xl text-emerald-600 border-emerald-500/30"
+                          className="text-xs h-9 rounded-xl text-emerald-600 border-emerald-500/30 font-semibold"
                         >
                           <CheckCircle2 className="size-4" />
                           <span>Cobrado</span>
                         </Button>
                       )}
 
-                      {/* Botón de Estado de Cocina / Entrega */}
+                      {/* Estado Operativo Cocina / Despacho */}
                       {ord.kitchen_status === 'pending' && (
                         <Button
                           size="sm"
                           variant="secondary"
                           onClick={() => handleUpdateStatus(ord.id, 'in_preparation')}
-                          className="text-xs h-9 rounded-xl font-semibold gap-1"
+                          className="text-xs h-9 rounded-xl font-semibold gap-1 hover:bg-muted"
                         >
-                          <ChefHat className="size-3.5" /> En Cocina
+                          <ChefHat className="size-3.5" /> A Cocina
                         </Button>
                       )}
                       {ord.kitchen_status === 'in_preparation' && (
@@ -291,9 +287,9 @@ export function ActiveOrdersList({ orders, customers = [] }: ActiveOrdersListPro
                           size="sm"
                           variant="secondary"
                           onClick={() => handleUpdateStatus(ord.id, 'ready')}
-                          className="text-xs h-9 rounded-xl font-semibold gap-1 text-emerald-600"
+                          className="text-xs h-9 rounded-xl font-semibold gap-1 text-emerald-600 hover:bg-muted"
                         >
-                          <CheckCircle2 className="size-3.5" /> Marcar Listo
+                          <CheckCircle2 className="size-3.5" /> Listo
                         </Button>
                       )}
                       {ord.kitchen_status === 'ready' && (
@@ -301,7 +297,7 @@ export function ActiveOrdersList({ orders, customers = [] }: ActiveOrdersListPro
                           size="sm"
                           variant="secondary"
                           onClick={() => handleUpdateStatus(ord.id, 'delivered')}
-                          className="text-xs h-9 rounded-xl font-semibold gap-1"
+                          className="text-xs h-9 rounded-xl font-semibold gap-1 text-primary hover:bg-muted"
                         >
                           <CheckCircle2 className="size-3.5" /> Despachar
                         </Button>
@@ -318,19 +314,19 @@ export function ActiveOrdersList({ orders, customers = [] }: ActiveOrdersListPro
                       )}
                     </div>
 
-                    {/* Botón secundario para cancelar comanda */}
-                    <div className="flex items-center justify-between text-[11px] pt-1">
+                    {/* Botón secundario discreto para anular */}
+                    <div className="flex items-center justify-end text-[11px] pt-0.5">
                       <button
                         type="button"
                         onClick={() => handleCancel(ord.id)}
-                        className="text-muted-foreground hover:text-destructive flex items-center gap-1 transition-colors"
+                        className="text-muted-foreground hover:text-destructive flex items-center gap-1 transition-colors text-xs"
                       >
-                        <Trash2 className="size-3" /> Anular comanda
+                        <Trash2 className="size-3" /> Anular
                       </button>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             )
           })}
         </div>

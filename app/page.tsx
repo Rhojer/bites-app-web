@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   ChefHat
 } from 'lucide-react'
+import { SavingsTargetsCard } from '@/components/finances/savings-targets-card'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -55,8 +56,8 @@ export default async function DashboardPage() {
   return (
     <AdminShell>
       <Navbar
-        title="Dashboard Ejecutivo"
-        description="Métricas consolidadas, alertas operativas y estado en tiempo real"
+        title="Resumen del Negocio"
+        description="Ventas de hoy, alertas de inventario y metas del mes en un vistazo"
         actions={
           <Link href="/pos">
             <Button size="sm" className="gap-1.5 shadow-xs">
@@ -133,6 +134,13 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Metas Financieras & Objetivos de Ahorro (Savings Targets) */}
+        <SavingsTargetsCard
+          currentSales={totalSales}
+          pendingBillsAmount={totalBillsAmount}
+          currentFoodCostPct={29.5}
+        />
 
         {/* Panel de Alertas Consolidadas y Accesos Rápidos */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

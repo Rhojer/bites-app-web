@@ -38,6 +38,7 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { processOrderAction } from '@/app/pos/actions'
 import { CustomerSelector, CustomerOption } from '@/components/pos/customer-selector'
+import { ButtonGroup, ButtonGroupItem } from '@/components/ui/button-group'
 
 interface RecipeItem {
   id: string
@@ -174,12 +175,15 @@ export function PosTerminal({ recipes, tables, customers = [] }: PosTerminalProp
   const tax = 0
   const total = subtotal + tax
   const totalBs = (total * bcvRate)
-  const isCash = paymentMethod === 'Efectivo USD'
+  const isCashUSD = paymentMethod === 'Efectivo USD'
+  const isCashBs = paymentMethod === 'Efectivo Bs'
+  const isCash = isCashUSD || isCashBs
   const isCredit = paymentMethod === 'Crédito'
 
   // Change calculation for cash payment
   const numericTendered = parseFloat(cashTendered) || 0
-  const changeDue = Math.max(0, numericTendered - total)
+  const changeDueUSD = Math.max(0, numericTendered - total)
+  const changeDueBs = Math.max(0, numericTendered - totalBs)
 
   const selectedCustomer = customers.find((c) => c.id === selectedCustomerId) || null
 
@@ -200,6 +204,14 @@ export function PosTerminal({ recipes, tables, customers = [] }: PosTerminalProp
     setLoading(true)
 
     try {
+      const defaultRef = isCredit
+        ? 'VENTA-A-CREDITO'
+        : isCashUSD
+        ? 'POS-EFECTIVO-USD'
+        : isCashBs
+        ? 'POS-EFECTIVO-BS'
+        : referenceNumber.trim()
+
       const res = await processOrderAction({
         table_id: orderType === 'dine_in' ? selectedTable : null,
         type: orderType,
@@ -211,7 +223,7 @@ export function PosTerminal({ recipes, tables, customers = [] }: PosTerminalProp
         customer_name: customerName || selectedCustomer?.full_name || (selectedTable ? `Mesa ${selectedTable}` : 'Cliente Mostrador'),
         is_paid: !isCredit,
         is_credit: isCredit,
-        reference_number: isCredit ? 'VENTA-A-CREDITO' : !isCash ? referenceNumber.trim() : 'POS-EFECTIVO',
+        reference_number: defaultRef,
       })
 
       setSuccessOrderNumber(res.orderId.slice(0, 8))
@@ -376,41 +388,32 @@ export function PosTerminal({ recipes, tables, customers = [] }: PosTerminalProp
           
           {/* Barra Superior: Selector de Modo y Búsqueda */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between bg-card p-3 rounded-2xl border shadow-xs gap-3">
-            <div className="grid grid-cols-3 gap-1.5 sm:flex sm:items-center">
-              <button
+            <ButtonGroup className="w-full sm:w-auto grid grid-cols-3 sm:flex">
+              <ButtonGroupItem
+                active={orderType === 'dine_in'}
                 onClick={() => setOrderType('dine_in')}
-                className={`py-2 px-3 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 active:scale-95 ${
-                  orderType === 'dine_in'
-                    ? 'bg-primary text-primary-foreground shadow-xs'
-                    : 'bg-muted/40 text-muted-foreground hover:bg-muted'
-                }`}
+                className="py-2 px-3 text-xs gap-1.5"
               >
                 <span>🍽️</span>
                 <span>Salón</span>
-              </button>
-              <button
+              </ButtonGroupItem>
+              <ButtonGroupItem
+                active={orderType === 'takeaway'}
                 onClick={() => setOrderType('takeaway')}
-                className={`py-2 px-3 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 active:scale-95 ${
-                  orderType === 'takeaway'
-                    ? 'bg-primary text-primary-foreground shadow-xs'
-                    : 'bg-muted/40 text-muted-foreground hover:bg-muted'
-                }`}
+                className="py-2 px-3 text-xs gap-1.5"
               >
                 <span>🛍️</span>
                 <span>Llevar</span>
-              </button>
-              <button
+              </ButtonGroupItem>
+              <ButtonGroupItem
+                active={orderType === 'delivery'}
                 onClick={() => setOrderType('delivery')}
-                className={`py-2 px-3 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 active:scale-95 ${
-                  orderType === 'delivery'
-                    ? 'bg-primary text-primary-foreground shadow-xs'
-                    : 'bg-muted/40 text-muted-foreground hover:bg-muted'
-                }`}
+                className="py-2 px-3 text-xs gap-1.5"
               >
                 <span>🛵</span>
                 <span>Delivery</span>
-              </button>
-            </div>
+              </ButtonGroupItem>
+            </ButtonGroup>
 
             <div className="flex items-center gap-2">
               <div className="relative flex-1 sm:w-44">
@@ -571,11 +574,11 @@ export function PosTerminal({ recipes, tables, customers = [] }: PosTerminalProp
           </DialogHeader>
 
           <div className="space-y-4 py-2 text-xs">
-            {/* Resumen de Total USD y Bolívares */}
+            {/* Resumen de Total: $ Principal y Bs Secundario */}
             <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20 space-y-1">
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-foreground text-xs">Monto Total a Cobrar:</span>
-                <span className="font-mono font-black text-2xl text-primary">${total.toFixed(2)}</span>
+                <span className="font-semibold text-foreground text-xs">Total a Cobrar:</span>
+                <span className="font-mono font-black text-2xl sm:text-3xl text-primary">${total.toFixed(2)}</span>
               </div>
               <div className="flex items-center justify-between pt-1 border-t border-primary/20 text-xs">
                 <span className="text-muted-foreground">Equivalente BCV ({bcvRate.toFixed(2)} Bs/$):</span>
@@ -604,13 +607,14 @@ export function PosTerminal({ recipes, tables, customers = [] }: PosTerminalProp
             {/* Selección de Método de Pago */}
             <div className="space-y-2">
               <label className="font-semibold text-foreground">Método de Pago:</label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {[
-                  { name: 'Efectivo USD', icon: Banknote },
-                  { name: 'Pago Móvil', icon: Smartphone },
-                  { name: 'Zelle', icon: Smartphone },
-                  { name: 'Punto de Venta / Tarjeta', icon: CreditCard },
-                  { name: 'Crédito', icon: Coins, label: '💳 Venta a Crédito' },
+                  { name: 'Efectivo USD', icon: Banknote, label: '💵 Efectivo $' },
+                  { name: 'Efectivo Bs', icon: Banknote, label: '🇻🇪 Efectivo Bs' },
+                  { name: 'Pago Móvil', icon: Smartphone, label: '🏦 Pago Móvil' },
+                  { name: 'Punto de Venta / Tarjeta', icon: CreditCard, label: '💳 Punto / Tarjeta' },
+                  { name: 'Zelle', icon: Smartphone, label: '📱 Zelle ($)' },
+                  { name: 'Crédito', icon: Coins, label: '👥 Venta Crédito' },
                 ].map((m) => (
                   <button
                     key={m.name}
@@ -618,8 +622,9 @@ export function PosTerminal({ recipes, tables, customers = [] }: PosTerminalProp
                     onClick={() => {
                       setPaymentMethod(m.name)
                       setRefError('')
+                      setCashTendered('')
                     }}
-                    className={`flex items-center gap-2.5 p-3 rounded-xl border text-xs font-semibold transition-all active:scale-95 ${
+                    className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-semibold transition-all active:scale-95 ${
                       paymentMethod === m.name
                         ? m.name === 'Crédito'
                           ? 'border-indigo-500 bg-indigo-600 text-white shadow-xs'
@@ -645,7 +650,7 @@ export function PosTerminal({ recipes, tables, customers = [] }: PosTerminalProp
                 </div>
                 {selectedCustomer ? (
                   <p className="text-[11px] text-muted-foreground leading-tight">
-                    Se incrementará la deuda de <strong>{selectedCustomer.full_name}</strong> por <strong>${total.toFixed(2)}</strong>.
+                    Se incrementará la deuda de <strong>{selectedCustomer.full_name}</strong> por <strong>${total.toFixed(2)}</strong> (Bs. {totalBs.toFixed(2)} a tasa actual).
                     Nueva deuda acumulada: <strong className="font-mono text-foreground">${((selectedCustomer.current_debt || 0) + total).toFixed(2)}</strong>.
                   </p>
                 ) : (
@@ -664,9 +669,14 @@ export function PosTerminal({ recipes, tables, customers = [] }: PosTerminalProp
                     <span>Nº Referencia Bancaria:</span>
                     <span className="text-destructive font-black">*</span>
                   </label>
-                  {paymentMethod === 'Pago Móvil' && (
+                  {(paymentMethod === 'Pago Móvil' || paymentMethod === 'Punto de Venta / Tarjeta') && (
                     <span className="text-[11px] font-mono font-bold text-primary">
                       Monto: Bs. {totalBs.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  )}
+                  {paymentMethod === 'Zelle' && (
+                    <span className="text-[11px] font-mono font-bold text-primary">
+                      Monto: ${total.toFixed(2)}
                     </span>
                   )}
                 </div>
@@ -686,10 +696,10 @@ export function PosTerminal({ recipes, tables, customers = [] }: PosTerminalProp
             )}
 
             {/* Calculadora de Vuelto para Efectivo USD */}
-            {paymentMethod === 'Efectivo USD' && (
+            {isCashUSD && (
               <div className="p-3.5 rounded-xl border bg-muted/20 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold text-foreground">Monto Recibido:</span>
+                  <span className="font-semibold text-foreground">Dólares Recibidos ($):</span>
                   <div className="relative w-32">
                     <span className="absolute left-2.5 top-1/2 -translate-y-1/2 font-mono text-muted-foreground">$</span>
                     <Input
@@ -702,7 +712,7 @@ export function PosTerminal({ recipes, tables, customers = [] }: PosTerminalProp
                   </div>
                 </div>
 
-                {/* Denominaciones Rápidas */}
+                {/* Denominaciones Rápidas USD */}
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <button
                     type="button"
@@ -725,9 +735,47 @@ export function PosTerminal({ recipes, tables, customers = [] }: PosTerminalProp
 
                 {numericTendered >= total && (
                   <div className="flex items-center justify-between pt-2 border-t text-xs">
-                    <span className="font-bold text-emerald-700 dark:text-emerald-300">Vuelto / Cambio a entregar:</span>
+                    <span className="font-bold text-emerald-700 dark:text-emerald-300">Vuelto a entregar ($):</span>
                     <span className="font-mono font-black text-sm text-emerald-700 dark:text-emerald-300">
-                      ${changeDue.toFixed(2)}
+                      ${changeDueUSD.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Calculadora de Vuelto para Efectivo Bs */}
+            {isCashBs && (
+              <div className="p-3.5 rounded-xl border bg-muted/20 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-foreground">Bolívares Recibidos (Bs):</span>
+                  <div className="relative w-36">
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 font-mono text-muted-foreground text-[10px]">Bs.</span>
+                    <Input
+                      type="number"
+                      placeholder="0.00"
+                      value={cashTendered}
+                      onChange={(e) => setCashTendered(e.target.value)}
+                      className="h-8 pl-8 text-xs font-mono font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setCashTendered(totalBs.toFixed(2))}
+                    className="text-[11px] px-2.5 py-1 rounded-lg bg-card border font-mono font-semibold hover:border-primary transition-colors"
+                  >
+                    Exacto (Bs. {totalBs.toFixed(2)})
+                  </button>
+                </div>
+
+                {numericTendered >= totalBs && (
+                  <div className="flex items-center justify-between pt-2 border-t text-xs">
+                    <span className="font-bold text-emerald-700 dark:text-emerald-300">Vuelto a entregar (Bs):</span>
+                    <span className="font-mono font-black text-sm text-emerald-700 dark:text-emerald-300">
+                      Bs. {changeDueBs.toFixed(2)}
                     </span>
                   </div>
                 )}
