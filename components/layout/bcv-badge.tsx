@@ -19,7 +19,8 @@ export function BcvBadge() {
   async function loadRate() {
     setLoading(true)
     try {
-      const res = await fetch('/api/bcv')
+      const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
+      const res = await fetch(`${basePath}/api/bcv`)
       if (res.ok) {
         const data = await res.json()
         setBcvData(data)
