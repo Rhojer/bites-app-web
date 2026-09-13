@@ -50,7 +50,8 @@ export function PayOrderDialog({
   const [refError, setRefError] = useState('')
 
   useEffect(() => {
-    fetch('/api/bcv')
+    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
+    fetch(`${basePath}/api/bcv`)
       .then((r) => r.json())
       .then((data) => {
         if (data?.rate) setBcvRate(data.rate)
