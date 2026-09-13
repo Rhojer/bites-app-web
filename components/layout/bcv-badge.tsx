@@ -53,16 +53,16 @@ export function BcvBadge() {
       onClick={loadRate}
       disabled={loading}
       title={`Tasa Oficial BCV: ${bcvData.rate} Bs/USD (${bcvData.source === 'bcv_direct' ? 'Directo de bcv.org.ve' : 'Sincronizado'}). Clic para refrescar.`}
-      className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-primary/10 border border-primary/20 text-xs font-bold text-foreground hover:bg-primary/20 transition-all active:scale-95 group shadow-2xs"
+      className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-xl bg-primary/10 border border-primary/20 text-xs font-bold text-foreground hover:bg-primary/20 transition-all active:scale-95 group shadow-2xs shrink-0"
     >
       <span className="text-primary font-black flex items-center">
-        💵 <span className="ml-1 text-[11px] text-muted-foreground uppercase font-semibold">BCV:</span>
+        💵 <span className="ml-1 text-[11px] text-muted-foreground uppercase font-semibold hidden sm:inline">BCV:</span>
       </span>
-      <span className="font-mono text-primary font-extrabold text-xs">
-        Bs. {bcvData.formattedRate}
+      <span className="font-mono text-primary font-extrabold text-[11px] sm:text-xs">
+        <span className="hidden sm:inline">Bs. </span>{bcvData.formattedRate}
       </span>
       <RefreshCw
-        className={`size-3 text-muted-foreground group-hover:text-primary transition-colors ${
+        className={`size-2.5 sm:size-3 text-muted-foreground group-hover:text-primary transition-colors ${
           loading ? 'animate-spin text-primary' : ''
         }`}
       />

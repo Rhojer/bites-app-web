@@ -100,8 +100,8 @@ export default async function PosPage() {
   return (
     <AdminShell>
       <Navbar
-        title="Punto de Venta (POS) & Comandas"
-        description="Gestión integral de pedidos activos, comandas abiertas, cobros y ventas del día"
+        title="Tomar Pedidos y Ventas"
+        description="Cobra órdenes, comanda a cocina y atiende mesas o pedidos para llevar"
       />
 
       <main className="p-6 max-w-7xl">

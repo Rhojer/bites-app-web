@@ -10,91 +10,158 @@ import { Wallet, ArrowDownRight, ArrowUpRight, DollarSign, Clock, FileText, Chec
 export default async function CashRegisterPage() {
   const supabase = await createClient()
 
-  // 1. Obtener pagos recibidos
-  const { data: paymentsData } = await supabase
-    .from('order_payments')
-    .select('amount, created_at, payment_method_id')
-    .order('created_at', { ascending: false })
-
-  // 2. Obtener egresos registrados (de expenses / cash_expenses)
-  const { data: expensesData } = await supabase
-    .from('expenses')
-    .select('*')
-    .order('created_at', { ascending: false })
+  // 1. Obtener pagos, egresos y métodos de pago
+  const [
+    { data: paymentsData },
+    { data: expensesData },
+    { data: cashExpensesData },
+    { data: paymentMethodsData }
+  ] = await Promise.all([
+    supabase.from('order_payments').select('amount, created_at, reference_number, payment_method_id').order('created_at', { ascending: false }),
+    supabase.from('expenses').select('*').order('created_at', { ascending: false }),
+    supabase.from('cash_expenses').select('*').order('created_at', { ascending: false }),
+    supabase.from('payment_methods').select('id, name, currency')
+  ])
 
   const payments = paymentsData || []
   const expenses = expensesData || []
+  const methods = paymentMethodsData || []
 
-  // Cálculos de caja
-  const initialCash = 50.00 // Fondo de caja base
-  const totalIncome = payments.reduce((acc, curr) => acc + curr.amount, 0)
-  const totalExpenses = expenses.reduce((acc, curr) => acc + curr.amount, 0)
-  const expectedCashBalance = initialCash + totalIncome - totalExpenses
+  const methodMap = new Map<string, { name: string; currency: string | null }>()
+  methods.forEach((m) => methodMap.set(m.id, m))
+
+  // Clasificación de pagos por Bóveda
+  let cashUSDIncome = 0
+  let cashBsIncome = 0
+  let bankBsIncome = 0
+  let bankUSDIncome = 0
+
+  payments.forEach((p) => {
+    const m = methodMap.get(p.payment_method_id)
+    const methodName = m?.name || ''
+    const ref = p.reference_number || ''
+
+    if (methodName.includes('Efectivo USD') || ref.includes('EFECTIVO-USD') || ref === 'POS-EFECTIVO') {
+      cashUSDIncome += p.amount
+    } else if (methodName.includes('Efectivo Bs') || ref.includes('EFECTIVO-BS')) {
+      cashBsIncome += p.amount
+    } else if (methodName.includes('Pago Móvil') || methodName.includes('Punto') || methodName.includes('Tarjeta')) {
+      bankBsIncome += p.amount
+    } else if (methodName.includes('Zelle')) {
+      bankUSDIncome += p.amount
+    } else {
+      cashUSDIncome += p.amount
+    }
+  })
+
+  // Fondos iniciales y Egresos
+  const initialCashUSD = 50.00
+  const initialCashBs = 0.00
+  const totalExpensesUSD = expenses.reduce((acc, curr) => acc + curr.amount, 0)
+
+  const balanceCashUSD = initialCashUSD + cashUSDIncome - totalExpensesUSD
+  const balanceCashBs = initialCashBs + cashBsIncome
+  const balanceBankBs = bankBsIncome
+  const balanceBankUSD = bankUSDIncome
 
   return (
     <AdminShell>
       <Navbar
-        title="Caja & Arqueo de Turno"
-        description="Control de efectivo, ingresos por ventas y egresos justificados con notas de diferimiento"
+        title="Caja del Día"
+        description="Efectivo en gaveta, transferencias bancarias y salidas de dinero justificadas"
         actions={<RecordExpenseDialog />}
       />
 
       <main className="p-6 space-y-6 max-w-7xl">
-        {/* KPI Cards de Caja */}
+        {/* KPI Cards de Bóvedas Multicaja */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border shadow-xs">
+          {/* Bóveda 1: Gaveta Efectivo USD */}
+          <Card className="border shadow-xs bg-emerald-500/5 border-emerald-500/20">
             <CardContent className="p-4 flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-xs text-muted-foreground font-medium">Fondo Inicial de Caja</p>
-                <p className="text-2xl font-bold tracking-tight text-foreground">${initialCash.toFixed(2)}</p>
-                <p className="text-[11px] text-muted-foreground">Apertura de turno</p>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-foreground font-bold">💵 Gaveta Efectivo USD</span>
+                  <Badge variant="outline" className="text-[9px] px-1 py-0 bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
+                    Físico $
+                  </Badge>
+                </div>
+                <p className="text-2xl font-black font-mono tracking-tight text-foreground">
+                  ${balanceCashUSD.toFixed(2)}
+                </p>
+                <p className="text-[11px] text-muted-foreground font-mono">
+                  +${cashUSDIncome.toFixed(2)} ventas | -${totalExpensesUSD.toFixed(2)} egresos
+                </p>
               </div>
-              <div className="size-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                <Wallet className="size-5" />
+              <div className="size-10 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold font-mono">
+                $
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border shadow-xs">
+          {/* Bóveda 2: Gaveta Efectivo Bs */}
+          <Card className="border shadow-xs bg-blue-500/5 border-blue-500/20">
             <CardContent className="p-4 flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-xs text-muted-foreground font-medium">Ingresos por Ventas</p>
-                <p className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
-                  +${totalIncome.toFixed(2)}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-foreground font-bold">🇻🇪 Gaveta Efectivo Bs</span>
+                  <Badge variant="outline" className="text-[9px] px-1 py-0 bg-blue-500/10 text-blue-600 border-blue-500/30">
+                    Físico Bs
+                  </Badge>
+                </div>
+                <p className="text-2xl font-black font-mono tracking-tight text-foreground">
+                  ${balanceCashBs.toFixed(2)}
                 </p>
-                <p className="text-[11px] text-muted-foreground">{payments.length} cobros procesados</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Billetes en bolívares en caja
+                </p>
               </div>
-              <div className="size-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <div className="size-10 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs">
+                Bs.
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Bóveda 3: Banco / Pago Móvil */}
+          <Card className="border shadow-xs bg-amber-500/5 border-amber-500/20">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-foreground font-bold">🏦 Banco / Pago Móvil</span>
+                  <Badge variant="outline" className="text-[9px] px-1 py-0 bg-amber-500/10 text-amber-600 border-amber-500/30">
+                    Digital Bs
+                  </Badge>
+                </div>
+                <p className="text-2xl font-black font-mono tracking-tight text-foreground">
+                  ${balanceBankBs.toFixed(2)}
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  Acreditado con Nº Referencia
+                </p>
+              </div>
+              <div className="size-10 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
                 <ArrowDownRight className="size-5" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border shadow-xs">
+          {/* Bóveda 4: Banco USD / Zelle */}
+          <Card className="border shadow-xs bg-purple-500/5 border-purple-500/20">
             <CardContent className="p-4 flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-xs text-muted-foreground font-medium">Egresos con Justificación</p>
-                <p className="text-2xl font-bold tracking-tight text-rose-600 dark:text-rose-400">
-                  -${totalExpenses.toFixed(2)}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-foreground font-bold">📱 Banco USD (Zelle)</span>
+                  <Badge variant="outline" className="text-[9px] px-1 py-0 bg-purple-500/10 text-purple-600 border-purple-500/30">
+                    Digital $
+                  </Badge>
+                </div>
+                <p className="text-2xl font-black font-mono tracking-tight text-foreground">
+                  ${balanceBankUSD.toFixed(2)}
                 </p>
-                <p className="text-[11px] text-muted-foreground">{expenses.length} retiros registrados</p>
-              </div>
-              <div className="size-10 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
-                <ArrowUpRight className="size-5" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border shadow-xs bg-primary/5 border-primary/20">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-xs text-primary font-semibold">Saldo Esperado en Caja</p>
-                <p className="text-2xl font-bold tracking-tight text-primary">
-                  ${expectedCashBalance.toFixed(2)}
+                <p className="text-[11px] text-muted-foreground">
+                  Cuentas internacionales
                 </p>
-                <p className="text-[11px] text-muted-foreground font-mono">Fondo + Ventas - Egresos</p>
               </div>
-              <div className="size-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center">
+              <div className="size-10 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold">
                 <DollarSign className="size-5" />
               </div>
             </CardContent>

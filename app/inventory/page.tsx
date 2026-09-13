@@ -27,8 +27,8 @@ export default async function InventoryPage() {
   return (
     <AdminShell>
       <Navbar
-        title="Inventario & Insumos"
-        description="Control de stock en tiempo real, costeo de insumos y registro de mermas"
+        title="Inventario de Ingredientes"
+        description="Existencias en despensa, alertas de stock bajo y registro de mermas"
         actions={
           <div className="flex items-center gap-2">
             <RecordWasteDialog ingredients={ingredients} />

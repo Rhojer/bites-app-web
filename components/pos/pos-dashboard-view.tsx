@@ -52,50 +52,31 @@ export function PosDashboardView({
 
   return (
     <div className="space-y-6">
-      {/* Barra de Acciones y Métricas Rápidas */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-4 items-center">
-        <Card className="border shadow-xs">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground font-medium">Comandas Activas</p>
-              <p className="text-2xl font-mono font-extrabold text-foreground">{totalActiveCount}</p>
-            </div>
-            <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-              <Clock className="size-5" />
-            </div>
-          </CardContent>
-        </Card>
+      {/* Barra de Acciones y Métricas Rápidas Estilizada */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card/60 backdrop-blur-xs p-3.5 sm:p-4 rounded-2xl border">
+        <div className="grid grid-cols-3 gap-3 sm:flex sm:items-center sm:gap-6 divide-x divide-border/60">
+          <div className="space-y-0.5">
+            <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">Activas</p>
+            <p className="text-xl sm:text-2xl font-mono font-extrabold text-foreground">{totalActiveCount}</p>
+          </div>
 
-        <Card className="border shadow-xs">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground font-medium">Por Cobrar</p>
-              <p className="text-2xl font-mono font-extrabold text-amber-600 dark:text-amber-400">
-                {unpaidCount}
-              </p>
-            </div>
-            <div className="size-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
-              <Receipt className="size-5" />
-            </div>
-          </CardContent>
-        </Card>
+          <div className="pl-3 sm:pl-6 space-y-0.5">
+            <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">Por Cobrar</p>
+            <p className="text-xl sm:text-2xl font-mono font-extrabold text-amber-600 dark:text-amber-400">
+              {unpaidCount}
+            </p>
+          </div>
 
-        <Card className="border shadow-xs">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground font-medium">Ventas Hoy</p>
-              <p className="text-2xl font-mono font-extrabold text-emerald-600 dark:text-emerald-400">
-                ${totalBilledToday.toFixed(2)}
-              </p>
-            </div>
-            <div className="size-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-              <TrendingUp className="size-5" />
-            </div>
-          </CardContent>
-        </Card>
+          <div className="pl-3 sm:pl-6 space-y-0.5">
+            <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">Ventas Hoy</p>
+            <p className="text-xl sm:text-2xl font-mono font-extrabold text-emerald-600 dark:text-emerald-400">
+              ${totalBilledToday.toFixed(2)}
+            </p>
+          </div>
+        </div>
 
         {/* Botón Principal para Nuevo Pedido Modal */}
-        <div className="flex items-center justify-end">
+        <div className="flex items-center justify-end shrink-0">
           <NewOrderDialog
             recipes={recipes}
             tables={tables}
@@ -103,10 +84,10 @@ export function PosDashboardView({
             trigger={
               <Button
                 size="lg"
-                className="w-full sm:w-auto h-14 px-6 rounded-2xl font-extrabold text-sm gap-2.5 shadow-md active:scale-95 transition-all bg-primary text-primary-foreground hover:bg-primary/90"
+                className="w-full sm:w-auto h-11 px-5 rounded-xl font-bold text-sm gap-2 shadow-xs active:scale-95 transition-all bg-primary text-primary-foreground hover:bg-primary/90"
               >
-                <Plus className="size-5" />
-                <span>+ Nuevo Pedido</span>
+                <Plus className="size-4.5" />
+                <span>Nuevo Pedido</span>
               </Button>
             }
           />
@@ -115,17 +96,17 @@ export function PosDashboardView({
 
       {/* Tabs de Navegación del POS */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="p-1 rounded-2xl bg-muted/60 border h-12 inline-flex items-center">
+        <TabsList className="p-1 rounded-xl bg-muted/60 border h-11 inline-flex items-center">
           <TabsTrigger
             value="active-orders"
-            className="rounded-xl px-4 py-2 text-xs font-bold gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-xs transition-all"
+            className="rounded-lg px-3.5 py-1.5 text-xs font-bold gap-2 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs transition-all"
           >
-            <Receipt className="size-4" />
-            <span>Pedidos Activos</span>
+            <Receipt className="size-4 text-primary" />
+            <span>Comandas Activas</span>
             {totalActiveCount > 0 && (
               <Badge
                 variant="secondary"
-                className="text-[10px] px-2 py-0 rounded-full font-mono bg-background/50 text-foreground"
+                className="text-[10px] px-1.5 py-0 rounded-full font-mono bg-primary/10 text-primary border-primary/20"
               >
                 {totalActiveCount}
               </Badge>
@@ -134,7 +115,7 @@ export function PosDashboardView({
 
           <TabsTrigger
             value="fast-catalog"
-            className="rounded-xl px-4 py-2 text-xs font-bold gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-xs transition-all"
+            className="rounded-lg px-3.5 py-1.5 text-xs font-bold gap-2 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs transition-all"
           >
             <LayoutGrid className="size-4" />
             <span>Terminal Rápida (Catálogo)</span>
@@ -142,10 +123,10 @@ export function PosDashboardView({
 
           <TabsTrigger
             value="history"
-            className="rounded-xl px-4 py-2 text-xs font-bold gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-xs transition-all"
+            className="rounded-lg px-3.5 py-1.5 text-xs font-bold gap-2 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs transition-all"
           >
             <History className="size-4" />
-            <span>Historial del Día ({todayOrders.length})</span>
+            <span>Historial ({todayOrders.length})</span>
           </TabsTrigger>
         </TabsList>
 

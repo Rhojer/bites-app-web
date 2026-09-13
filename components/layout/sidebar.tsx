@@ -20,58 +20,49 @@ import { Badge } from '@/components/ui/badge'
 
 export const navigationItems = [
   {
-    name: 'Dashboard',
+    name: 'Resumen',
     href: '/',
     icon: LayoutDashboard,
-    badge: null,
   },
   {
-    name: 'Inventario & Insumos',
-    href: '/inventory',
-    icon: Boxes,
-    badge: null,
-  },
-  {
-    name: 'Recetas',
-    href: '/recipes',
-    icon: UtensilsCrossed,
-    badge: 'Costeo',
-  },
-  {
-    name: 'Punto de Venta (POS)',
+    name: 'Tomar Pedidos',
     href: '/pos',
     icon: MonitorCheck,
-    badge: 'Salón',
   },
   {
-    name: 'Monitor de Cocina (KDS)',
-    href: '/kitchen',
-    icon: ChefHat,
-    badge: 'En Vivo',
+    name: 'Menú y Costos',
+    href: '/recipes',
+    icon: UtensilsCrossed,
   },
   {
-    name: 'Caja & Egresos',
+    name: 'Inventario',
+    href: '/inventory',
+    icon: Boxes,
+  },
+  {
+    name: 'Caja del Día',
     href: '/cash-register',
     icon: Wallet,
-    badge: null,
   },
   {
-    name: 'Finanzas & P&L',
-    href: '/finances',
-    icon: TrendingDown,
-    badge: null,
-  },
-  {
-    name: 'CRM & Clientes',
+    name: 'Clientes',
     href: '/crm',
     icon: Users,
-    badge: null,
   },
   {
-    name: 'Configuración',
+    name: 'Finanzas',
+    href: '/finances',
+    icon: TrendingDown,
+  },
+  {
+    name: 'Cocina en Vivo',
+    href: '/kitchen',
+    icon: ChefHat,
+  },
+  {
+    name: 'Ajustes',
     href: '/settings',
     icon: Settings,
-    badge: null,
   },
 ]
 
@@ -89,17 +80,17 @@ export function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
           <div className="flex items-center gap-2">
             <span className="font-bold text-lg tracking-tight text-foreground">Bites App</span>
             <Badge variant="outline" className="text-xs px-2 py-0 bg-primary/5 text-primary border-primary/20 font-semibold">
-              ERP
+              Admin
             </Badge>
           </div>
-          <p className="text-xs text-muted-foreground font-medium">Gestión Gastronómica</p>
+          <p className="text-xs text-muted-foreground font-medium">Control del Restaurante</p>
         </div>
       </div>
 
       {/* Navigation Links */}
       <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto">
         <p className="px-3 text-xs font-bold text-muted-foreground tracking-wider uppercase mb-2">
-          Operaciones & Control
+          Menú Principal
         </p>
         {navigationItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href))
@@ -116,19 +107,8 @@ export function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
             >
               <div className="flex items-center gap-3">
                 <item.icon className={`size-5 shrink-0 ${isActive ? 'text-primary-foreground' : 'text-muted-foreground'}`} />
-                <span className="font-medium">{item.name}</span>
+                <span className="font-semibold text-sm tracking-tight">{item.name}</span>
               </div>
-              {item.badge && (
-                <span
-                  className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${
-                    isActive
-                      ? 'bg-primary-foreground/20 text-primary-foreground'
-                      : 'bg-muted text-muted-foreground'
-                  }`}
-                >
-                  {item.badge}
-                </span>
-              )}
             </Link>
           )
         })}
@@ -139,10 +119,10 @@ export function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground font-medium flex items-center gap-2">
             <span className="size-2.5 rounded-full bg-emerald-500 animate-pulse" />
-            Supabase Conectado
+            Sistema en línea
           </span>
         </div>
-        <p className="text-xs text-muted-foreground leading-snug">Base de datos sincronizada en tiempo real.</p>
+        <p className="text-xs text-muted-foreground leading-snug">Datos actualizados al momento.</p>
       </div>
     </div>
   )

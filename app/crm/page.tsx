@@ -51,8 +51,8 @@ export default async function CRMPage() {
   return (
     <AdminShell>
       <Navbar
-        title="CRM, Clientes & Créditos"
-        description="Directorio de clientes, cuentas corrientes, líneas de crédito y campañas de fidelización"
+        title="Clientes y Cuentas"
+        description="Directorio de clientes, cuentas corrientes, fiados y promociones"
         actions={
           <div className="flex items-center gap-2">
             <RecordCreditPaymentDialog

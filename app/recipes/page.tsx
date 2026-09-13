@@ -100,8 +100,8 @@ export default async function RecipesPage() {
   return (
     <AdminShell>
       <Navbar
-        title="Recetas & Escandallos"
-        description="Composición de platos, costeo dinámico en cascada y cálculo de platos preparables"
+        title="Menú, Platos y Costos"
+        description="Platos a la venta, ingredientes requeridos y cálculo de ganancias"
         actions={
           <CreateRecipeDialog
             availableIngredients={availableIngredients}

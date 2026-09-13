@@ -87,6 +87,25 @@ export function RecordExpenseDialog() {
             </div>
 
             <div className="space-y-1.5">
+              <Label htmlFor="vault">Bóveda / Origen del Dinero *</Label>
+              <select
+                id="vault"
+                name="vault"
+                className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                <option value="cash_usd" className="bg-popover text-popover-foreground">
+                  💵 Gaveta Efectivo USD ($)
+                </option>
+                <option value="cash_bs" className="bg-popover text-popover-foreground">
+                  🇻🇪 Gaveta Efectivo Bs (Bs)
+                </option>
+                <option value="bank_ves" className="bg-popover text-popover-foreground">
+                  🏦 Banco / Transferencia Bs
+                </option>
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
               <Label htmlFor="category">Categoría del Egreso *</Label>
               <select
                 id="category"

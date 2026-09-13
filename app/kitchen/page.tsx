@@ -14,13 +14,13 @@ export default async function KitchenPage() {
   return (
     <AdminShell>
       <Navbar
-        title="Monitor de Cocina en Tiempo Real (KDS)"
-        description="Gestión de comandas, tiempos de preparación y despacho para chefs y cocineros"
+        title="Cocina en Vivo"
+        description="Comandas activas, tiempos de preparación y platos listos para servir"
         actions={
           <Link href="/pos">
             <Button size="sm" variant="outline" className="gap-1.5 text-xs shadow-2xs">
               <UtensilsCrossed className="size-3.5" />
-              Abrir POS / Nueva Comanda
+              Tomar Nuevo Pedido
             </Button>
           </Link>
         }
