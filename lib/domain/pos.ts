@@ -96,7 +96,9 @@ export function calculatePOSInventoryDeductions(
       recipes,
       recipeIngredients,
       recipeSubRecipes,
-      item.quantity
+      item.quantity,
+      new Set<string>(),
+      ingredients
     )
 
     for (const [ingId, qty] of reqs.entries()) {

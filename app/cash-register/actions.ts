@@ -2,14 +2,15 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { sanitizeText } from '@/lib/security'
 
 export async function createCashExpenseAction(formData: FormData) {
   const supabase = await createClient()
 
   const amount = parseFloat(formData.get('amount') as string) || 0
-  const category = (formData.get('category') as string) || 'Otros'
-  const recipient = (formData.get('recipient') as string) || ''
-  const notes = (formData.get('notes') as string) || ''
+  const category = sanitizeText((formData.get('category') as string) || 'Otros')
+  const recipient = sanitizeText((formData.get('recipient') as string) || '')
+  const notes = sanitizeText((formData.get('notes') as string) || '')
   const vault = (formData.get('vault') as string) || 'cash_usd'
   const currency = vault === 'cash_usd' ? 'USD' : 'VES'
 
@@ -36,6 +37,46 @@ export async function createCashExpenseAction(formData: FormData) {
 
   if (expErr) {
     console.error('Error al insertar en cash_expenses:', expErr.message)
+  }
+
+  revalidatePath('/cash-register')
+  revalidatePath('/finances')
+  revalidatePath('/')
+  return { success: true }
+}
+
+export async function recordCurrencyExchangeAction(params: {
+  from_vault: string
+  to_vault: string
+  from_amount: number
+  from_currency: string
+  to_amount: number
+  to_currency: string
+  exchange_rate: number
+  notes?: string
+}) {
+  const supabase = await createClient()
+
+  if (params.from_amount <= 0 || params.to_amount <= 0) {
+    throw new Error('Los montos de canje deben ser mayores a 0.')
+  }
+  if (params.from_vault === params.to_vault) {
+    throw new Error('La bóveda de origen y destino deben ser distintas.')
+  }
+
+  const { error } = await (supabase as any).from('currency_exchanges').insert({
+    from_vault: params.from_vault,
+    to_vault: params.to_vault,
+    from_amount: params.from_amount,
+    from_currency: params.from_currency,
+    to_amount: params.to_amount,
+    to_currency: params.to_currency,
+    exchange_rate: params.exchange_rate,
+    notes: sanitizeText(params.notes || 'Canje manual de divisas'),
+  })
+
+  if (error) {
+    console.error('Error al insertar currency_exchange:', error.message)
   }
 
   revalidatePath('/cash-register')

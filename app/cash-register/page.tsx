@@ -5,74 +5,115 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { RecordExpenseDialog } from '@/components/cash-register/record-expense-dialog'
-import { Wallet, ArrowDownRight, ArrowUpRight, DollarSign, Clock, FileText, CheckCircle2, AlertTriangle } from 'lucide-react'
+import { CurrencyExchangeDialog } from '@/components/cash-register/currency-exchange-dialog'
+import { calculateMultiVaultBalances, VaultType } from '@/lib/domain/cash-register'
+import { Wallet, ArrowDownRight, ArrowUpRight, DollarSign, Clock, FileText, CheckCircle2, AlertTriangle, ArrowLeftRight } from 'lucide-react'
 
 export default async function CashRegisterPage() {
   const supabase = await createClient()
 
-  // 1. Obtener pagos, egresos y métodos de pago
+  // 1. Obtener pagos, egresos, canjes y métodos de pago
   const [
     { data: paymentsData },
     { data: expensesData },
-    { data: cashExpensesData },
+    { data: exchangesData },
     { data: paymentMethodsData }
   ] = await Promise.all([
-    supabase.from('order_payments').select('amount, created_at, reference_number, payment_method_id').order('created_at', { ascending: false }),
+    supabase.from('order_payments').select('*').order('created_at', { ascending: false }),
     supabase.from('expenses').select('*').order('created_at', { ascending: false }),
-    supabase.from('cash_expenses').select('*').order('created_at', { ascending: false }),
+    (supabase as any).from('currency_exchanges').select('*').order('created_at', { ascending: false }),
     supabase.from('payment_methods').select('id, name, currency')
   ])
 
-  const payments = paymentsData || []
-  const expenses = expensesData || []
+  const payments: any[] = paymentsData || []
+  const expenses: any[] = expensesData || []
+  const exchanges: any[] = (exchangesData as any[]) || []
   const methods = paymentMethodsData || []
 
   const methodMap = new Map<string, { name: string; currency: string | null }>()
   methods.forEach((m) => methodMap.set(m.id, m))
 
-  // Clasificación de pagos por Bóveda
-  let cashUSDIncome = 0
-  let cashBsIncome = 0
-  let bankBsIncome = 0
-  let bankUSDIncome = 0
-
-  payments.forEach((p) => {
+  // Calcular balances estáticos de las 4 bóvedas usando la lógica pura de dominio
+  const formattedPayments = payments.map((p) => {
     const m = methodMap.get(p.payment_method_id)
-    const methodName = m?.name || ''
-    const ref = p.reference_number || ''
-
-    if (methodName.includes('Efectivo USD') || ref.includes('EFECTIVO-USD') || ref === 'POS-EFECTIVO') {
-      cashUSDIncome += p.amount
-    } else if (methodName.includes('Efectivo Bs') || ref.includes('EFECTIVO-BS')) {
-      cashBsIncome += p.amount
-    } else if (methodName.includes('Pago Móvil') || methodName.includes('Punto') || methodName.includes('Tarjeta')) {
-      bankBsIncome += p.amount
-    } else if (methodName.includes('Zelle')) {
-      bankUSDIncome += p.amount
-    } else {
-      cashUSDIncome += p.amount
+    return {
+      amount: p.amount,
+      amount_currency: p.amount_currency,
+      currency: p.currency,
+      exchange_rate: p.exchange_rate,
+      vault: p.vault as VaultType,
+      payment_method_name: m?.name || p.reference_number || '',
+      created_at: p.created_at,
     }
   })
 
-  // Fondos iniciales y Egresos
-  const initialCashUSD = 50.00
-  const initialCashBs = 0.00
-  const totalExpensesUSD = expenses.reduce((acc, curr) => acc + curr.amount, 0)
+  const formattedExpenses = expenses.map((e) => ({
+    id: e.id,
+    amount: e.amount,
+    category: e.category,
+    notes: e.description,
+    vault: 'cash_usd' as VaultType,
+    currency: 'USD',
+    created_at: e.created_at,
+  }))
 
-  const balanceCashUSD = initialCashUSD + cashUSDIncome - totalExpensesUSD
-  const balanceCashBs = initialCashBs + cashBsIncome
-  const balanceBankBs = bankBsIncome
-  const balanceBankUSD = bankUSDIncome
+  const vaultBalances = calculateMultiVaultBalances({
+    initialBalances: {
+      cash_usd: 50.00,
+      cash_ves: 0.00,
+      bank_ves: 0.00,
+      bank_usd: 0.00,
+    },
+    payments: formattedPayments,
+    expenses: formattedExpenses,
+    exchanges: exchanges.map((ex: any) => ({
+      from_vault: ex.from_vault as VaultType,
+      to_vault: ex.to_vault as VaultType,
+      from_amount: ex.from_amount,
+      from_currency: ex.from_currency as 'USD' | 'VES',
+      to_amount: ex.to_amount,
+      to_currency: ex.to_currency as 'USD' | 'VES',
+      exchange_rate: ex.exchange_rate,
+      notes: ex.notes,
+      created_at: ex.created_at,
+    })),
+    currentBcvRate: 842.20,
+  })
 
   return (
     <AdminShell>
       <Navbar
         title="Caja del Día"
         description="Efectivo en gaveta, transferencias bancarias y salidas de dinero justificadas"
-        actions={<RecordExpenseDialog />}
+        actions={
+          <div className="flex items-center gap-2">
+            <CurrencyExchangeDialog />
+            <RecordExpenseDialog />
+          </div>
+        }
       />
 
-      <main className="p-6 space-y-6 max-w-7xl">
+      <main className="p-4 sm:p-6 space-y-6 max-w-7xl">
+        {/* Total Consolidado en Bóvedas */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border bg-gradient-to-r from-primary/10 via-primary/5 to-transparent gap-3">
+          <div>
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Patrimonio Total en Bóvedas (Consolidado)
+            </span>
+            <p className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-foreground">
+              ${vaultBalances.totalEquivalentUSD.toFixed(2)} USD
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Suma de efectivo y cuentas bancarias en dólares y bolívares.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="bg-card text-xs font-semibold py-1 px-3 border shadow-xs">
+              4 Bóvedas Operativas
+            </Badge>
+          </div>
+        </div>
+
         {/* KPI Cards de Bóvedas Multicaja */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Bóveda 1: Gaveta Efectivo USD */}
@@ -86,10 +127,10 @@ export default async function CashRegisterPage() {
                   </Badge>
                 </div>
                 <p className="text-2xl font-black font-mono tracking-tight text-foreground">
-                  ${balanceCashUSD.toFixed(2)}
+                  ${vaultBalances.cash_usd.nominal.toFixed(2)}
                 </p>
-                <p className="text-[11px] text-muted-foreground font-mono">
-                  +${cashUSDIncome.toFixed(2)} ventas | -${totalExpensesUSD.toFixed(2)} egresos
+                <p className="text-[11px] text-muted-foreground font-medium">
+                  Billetes en dólares en gaveta
                 </p>
               </div>
               <div className="size-10 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold font-mono">
@@ -109,10 +150,10 @@ export default async function CashRegisterPage() {
                   </Badge>
                 </div>
                 <p className="text-2xl font-black font-mono tracking-tight text-foreground">
-                  ${balanceCashBs.toFixed(2)}
+                  Bs. {vaultBalances.cash_ves.nominal.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
-                <p className="text-[11px] text-muted-foreground">
-                  Billetes en bolívares en caja
+                <p className="text-[11px] text-muted-foreground font-medium">
+                  Billetes en bolívares en gaveta
                 </p>
               </div>
               <div className="size-10 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs">
@@ -126,16 +167,16 @@ export default async function CashRegisterPage() {
             <CardContent className="p-4 flex items-center justify-between">
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-foreground font-bold">🏦 Banco / Pago Móvil</span>
+                  <span className="text-xs text-foreground font-bold">🏦 Banco Bolívares</span>
                   <Badge variant="outline" className="text-[9px] px-1 py-0 bg-amber-500/10 text-amber-600 border-amber-500/30">
-                    Digital Bs
+                    Pago Móvil / POS
                   </Badge>
                 </div>
                 <p className="text-2xl font-black font-mono tracking-tight text-foreground">
-                  ${balanceBankBs.toFixed(2)}
+                  Bs. {vaultBalances.bank_ves.nominal.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
-                <p className="text-[11px] text-muted-foreground">
-                  Acreditado con Nº Referencia
+                <p className="text-[11px] text-muted-foreground font-medium">
+                  Transferencias y puntos de venta
                 </p>
               </div>
               <div className="size-10 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
@@ -149,16 +190,16 @@ export default async function CashRegisterPage() {
             <CardContent className="p-4 flex items-center justify-between">
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-foreground font-bold">📱 Banco USD (Zelle)</span>
+                  <span className="text-xs text-foreground font-bold">🌐 Banco USD (Zelle)</span>
                   <Badge variant="outline" className="text-[9px] px-1 py-0 bg-purple-500/10 text-purple-600 border-purple-500/30">
                     Digital $
                   </Badge>
                 </div>
                 <p className="text-2xl font-black font-mono tracking-tight text-foreground">
-                  ${balanceBankUSD.toFixed(2)}
+                  ${vaultBalances.bank_usd.nominal.toFixed(2)}
                 </p>
-                <p className="text-[11px] text-muted-foreground">
-                  Cuentas internacionales
+                <p className="text-[11px] text-muted-foreground font-medium">
+                  Cuentas internacionales / Divisas
                 </p>
               </div>
               <div className="size-10 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold">
@@ -167,6 +208,64 @@ export default async function CashRegisterPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Historial de Canjes de Divisas y Transferencias */}
+        {exchanges.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ArrowLeftRight className="size-4 text-primary" />
+                <h2 className="text-sm font-semibold text-foreground">Historial de Canjes y Transferencias entre Bóvedas</h2>
+              </div>
+              <Badge variant="outline" className="text-xs">
+                {exchanges.length} Canjes Registrados
+              </Badge>
+            </div>
+
+            <div className="rounded-2xl border bg-card overflow-hidden shadow-xs">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[650px] text-xs text-left">
+                  <thead className="bg-muted/40 text-muted-foreground font-semibold border-b">
+                    <tr>
+                      <th className="py-3 px-4">Fecha / Hora</th>
+                      <th className="py-3 px-4">Origen ➔ Destino</th>
+                      <th className="py-3 px-4 text-right">Monto Retirado</th>
+                      <th className="py-3 px-4 text-right">Monto Depositado</th>
+                      <th className="py-3 px-4 text-right">Tasa Usada</th>
+                      <th className="py-3 px-4">Motivo / Nota</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {exchanges.map((ex: any) => (
+                      <tr key={ex.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="py-3 px-4 text-muted-foreground font-mono text-[11px] whitespace-nowrap">
+                          {new Date(ex.created_at).toLocaleString()}
+                        </td>
+                        <td className="py-3 px-4 font-semibold">
+                          <span className="capitalize">{ex.from_vault.replace('_', ' ')}</span>
+                          <span className="text-muted-foreground mx-1.5">➔</span>
+                          <span className="capitalize text-primary">{ex.to_vault.replace('_', ' ')}</span>
+                        </td>
+                        <td className="py-3 px-4 text-right font-mono font-bold text-rose-600 dark:text-rose-400">
+                          {ex.from_currency === 'USD' ? `$${Number(ex.from_amount).toFixed(2)}` : `Bs. ${Number(ex.from_amount).toFixed(2)}`}
+                        </td>
+                        <td className="py-3 px-4 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                          {ex.to_currency === 'USD' ? `$${Number(ex.to_amount).toFixed(2)}` : `Bs. ${Number(ex.to_amount).toFixed(2)}`}
+                        </td>
+                        <td className="py-3 px-4 text-right font-mono text-muted-foreground">
+                          {ex.exchange_rate} Bs/$
+                        </td>
+                        <td className="py-3 px-4 text-muted-foreground text-xs">
+                          {ex.notes}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Tabla de Egresos y Salidas de Dinero con Nota */}
         <div className="space-y-3">

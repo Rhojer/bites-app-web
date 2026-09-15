@@ -1,3 +1,10 @@
+import {
+  convertUnitQuantity,
+  calculateNormalizedUnitCost,
+  SUPPORTED_UNITS,
+  normalizeUnitCode
+} from './units'
+
 export interface IngredientItem {
   id: string
   name: string
@@ -20,6 +27,7 @@ export interface RecipeIngredientRelation {
   recipe_id: string
   ingredient_id: string
   quantity: number
+  unit?: string
 }
 
 export interface RecipeSubRecipeRelation {
@@ -44,6 +52,7 @@ export interface RecipeCostBreakdown {
       ingredientId: string
       name: string
       quantity: number
+      unit?: string
       unitCost: number
       totalCost: number
     }>
@@ -80,7 +89,8 @@ export interface PreparableDishesResult {
 
 /**
  * Calcula el costo dinámico en cascada de una receta y sus sub-recetas anidadas.
- * Soporta anidamiento recursivo de sub-recetas (ej. salsa tártara -> mayonesa base -> aceite/huevo).
+ * Soporta anidamiento recursivo de sub-recetas (ej. salsa tártara -> mayonesa base -> aceite/huevo)
+ * y conversión automática entre unidades (ej. receta en gr, stock en kg).
  */
 export function calculateRecipeCost(
   recipeId: string,
@@ -101,17 +111,28 @@ export function calculateRecipeCost(
   const price = recipe?.price || 0
   const yieldQuantity = recipe?.yield_quantity && recipe.yield_quantity > 0 ? recipe.yield_quantity : 1
 
-  // 1. Insumos directos
+  // 1. Insumos directos con conversión de unidades
   const directIngs = recipeIngredients.filter((ri) => ri.recipe_id === recipeId)
   const ingredientsDetails = directIngs.map((ri) => {
     const ing = ingredients.find((i) => i.id === ri.ingredient_id)
+    const storageUnit = ing?.unit || 'und'
+    const recipeUnit = ri.unit || storageUnit
     const ingCost = ing ? ing.cost_per_unit : 0
-    const totalCost = ingCost * ri.quantity
+
+    let unitCost = ingCost
+    try {
+      unitCost = calculateNormalizedUnitCost(ingCost, storageUnit, recipeUnit)
+    } catch {
+      unitCost = ingCost
+    }
+
+    const totalCost = Number((unitCost * ri.quantity).toFixed(4))
     return {
       ingredientId: ri.ingredient_id,
       name: ing?.name || 'Insumo',
       quantity: ri.quantity,
-      unitCost: ingCost,
+      unit: recipeUnit,
+      unitCost,
       totalCost,
     }
   })
@@ -167,7 +188,8 @@ export function calculateRecipeCost(
 }
 
 /**
- * Descompone una receta y sus sub-recetas en los insumos base requeridos por porción.
+ * Descompone una receta y sus sub-recetas en los insumos base requeridos por porción,
+ * normalizados a las unidades de almacenamiento de cada ingrediente.
  */
 export function getFlattenedIngredientRequirements(
   recipeId: string,
@@ -175,7 +197,8 @@ export function getFlattenedIngredientRequirements(
   recipeIngredients: RecipeIngredientRelation[],
   recipeSubRecipes: RecipeSubRecipeRelation[],
   multiplier = 1,
-  visited = new Set<string>()
+  visited = new Set<string>(),
+  ingredientsList?: IngredientItem[]
 ): Map<string, number> {
   if (visited.has(recipeId)) {
     throw new Error(`Dependencia circular detectada en la receta con ID: ${recipeId}`)
@@ -189,7 +212,18 @@ export function getFlattenedIngredientRequirements(
   // Insumos directos
   const directIngs = recipeIngredients.filter((ri) => ri.recipe_id === recipeId)
   for (const item of directIngs) {
-    const qtyPerPortion = (item.quantity / yieldQuantity) * multiplier
+    let quantityInStorageUnit = item.quantity
+    if (ingredientsList && item.unit) {
+      const ing = ingredientsList.find((i) => i.id === item.ingredient_id)
+      if (ing?.unit) {
+        try {
+          quantityInStorageUnit = convertUnitQuantity(item.quantity, item.unit, ing.unit)
+        } catch {
+          quantityInStorageUnit = item.quantity
+        }
+      }
+    }
+    const qtyPerPortion = (quantityInStorageUnit / yieldQuantity) * multiplier
     requirements.set(item.ingredient_id, (requirements.get(item.ingredient_id) || 0) + qtyPerPortion)
   }
 
@@ -203,7 +237,8 @@ export function getFlattenedIngredientRequirements(
       recipeIngredients,
       recipeSubRecipes,
       subMultiplier,
-      new Set(visited)
+      new Set(visited),
+      ingredientsList
     )
 
     for (const [ingId, qty] of subRequirements.entries()) {
@@ -229,7 +264,10 @@ export function calculatePreparableDishes(
     recipeId,
     recipes,
     recipeIngredients,
-    recipeSubRecipes
+    recipeSubRecipes,
+    1,
+    new Set<string>(),
+    ingredients
   )
 
   if (requirements.size === 0) {

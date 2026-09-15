@@ -2,15 +2,16 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { sanitizeText } from '@/lib/security'
 
 export async function createBillAction(formData: FormData) {
   const supabase = await createClient()
 
   const supplier_id = formData.get('supplier_id') as string
-  const invoice_number = (formData.get('invoice_number') as string) || null
+  const invoice_number = sanitizeText(formData.get('invoice_number') as string) || null
   const amount = parseFloat(formData.get('amount') as string) || 0
   const due_date = formData.get('due_date') as string
-  const notes = (formData.get('notes') as string) || null
+  const notes = sanitizeText(formData.get('notes') as string) || null
 
   if (!supplier_id) {
     throw new Error('Debe seleccionar un proveedor.')
@@ -47,7 +48,7 @@ export async function payBillAction(formData: FormData) {
   const supabase = await createClient()
 
   const bill_id = formData.get('bill_id') as string
-  const payment_notes = (formData.get('payment_notes') as string) || ''
+  const payment_notes = sanitizeText(formData.get('payment_notes') as string) || ''
   const register_as_expense = formData.get('register_as_expense') === 'true'
 
   if (!bill_id) {
@@ -118,11 +119,11 @@ export async function payBillAction(formData: FormData) {
 export async function createExpenseAction(formData: FormData) {
   const supabase = await createClient()
 
-  const category = (formData.get('category') as string) || 'Otros'
+  const category = sanitizeText(formData.get('category') as string) || 'Otros'
   const type = (formData.get('type') as string) || 'variable'
   const amount = parseFloat(formData.get('amount') as string) || 0
   const date = (formData.get('date') as string) || new Date().toISOString().split('T')[0]
-  const description = (formData.get('description') as string) || ''
+  const description = sanitizeText(formData.get('description') as string) || ''
 
   if (amount <= 0) {
     throw new Error('El monto del gasto debe ser mayor a 0.')
