@@ -2,19 +2,24 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { sanitizeText } from '@/lib/security'
 
 export async function createIngredientAction(formData: FormData) {
   const supabase = await createClient()
 
-  const name = formData.get('name') as string
-  const code = formData.get('code') as string || null
-  const category = (formData.get('category') as string) || 'General'
-  const unit = (formData.get('unit') as string) || 'kg'
+  const name = sanitizeText(formData.get('name') as string)
+  const code = sanitizeText(formData.get('code') as string) || null
+  const category = sanitizeText(formData.get('category') as string) || 'General'
+  const unit = sanitizeText(formData.get('unit') as string) || 'kg'
   const current_stock = parseFloat(formData.get('current_stock') as string) || 0
   const min_stock = parseFloat(formData.get('min_stock') as string) || 0
   const max_stock = parseFloat(formData.get('max_stock') as string) || 0
   const cost_per_unit = parseFloat(formData.get('cost_per_unit') as string) || 0
-  const location = formData.get('location') as string || null
+  const location = sanitizeText(formData.get('location') as string) || null
+
+  if (!name) {
+    throw new Error('El nombre del insumo es obligatorio.')
+  }
 
   const { error } = await supabase.from('ingredients').insert({
     name,
@@ -56,7 +61,7 @@ export async function registerMovementAction(formData: FormData) {
   const ingredient_id = formData.get('ingredient_id') as string
   const type = formData.get('type') as string // 'purchase' | 'waste' | 'adjustment'
   const quantity = parseFloat(formData.get('quantity') as string) || 0
-  const reason = formData.get('reason') as string || ''
+  const reason = sanitizeText(formData.get('reason') as string) || ''
 
   if (!ingredient_id || quantity <= 0) {
     throw new Error('Insumo y cantidad válida son requeridos.')

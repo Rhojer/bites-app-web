@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { SidebarContent } from '@/components/layout/sidebar'
 import { BcvBadge } from '@/components/layout/bcv-badge'
+import { OfflineSyncIndicator } from '@/components/layout/offline-sync-indicator'
 
 interface NavbarProps {
   title?: string
@@ -53,8 +54,9 @@ export function Navbar({ title, description, actions }: NavbarProps) {
           </div>
         </div>
 
-        {/* Right: BCV Badge + Actions (Desktop) + Profile */}
-        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+        {/* Right: Offline Indicator + BCV Badge + Actions (Desktop) + Profile */}
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          <OfflineSyncIndicator />
           <BcvBadge />
 
           {/* Actions in Navbar for Desktop/Tablet */}

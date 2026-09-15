@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { PlusCircle, Trash2, Loader2, Sparkles, UtensilsCrossed, Layers, DollarSign } from 'lucide-react'
+import { PlusCircle, Trash2, Loader2, Sparkles, UtensilsCrossed, Layers, DollarSign, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { createRecipeAction } from '@/app/recipes/actions'
+import { calculateNormalizedUnitCost, checkRecipeQuantitySanity, SUPPORTED_UNITS } from '@/lib/domain/units'
 
 interface IngredientOption {
   id: string
@@ -56,17 +57,26 @@ export function CreateRecipeDialog({
 
   // Selected components
   const [selectedIngredients, setSelectedIngredients] = useState<
-    { ingredient_id: string; quantity: number }[]
+    { ingredient_id: string; quantity: number; unit?: string }[]
   >([])
 
   const [selectedSubRecipes, setSelectedSubRecipes] = useState<
     { child_recipe_id: string; quantity: number }[]
   >([])
 
-  // Cálculos en tiempo real
+  // Cálculos en tiempo real con normalización de unidades
   const ingredientsCost = selectedIngredients.reduce((acc, curr) => {
     const item = availableIngredients.find((i) => i.id === curr.ingredient_id)
-    return acc + (item ? item.cost_per_unit * curr.quantity : 0)
+    if (!item) return acc
+    const storageUnit = item.unit || 'und'
+    const recipeUnit = curr.unit || storageUnit
+    let unitCost = item.cost_per_unit
+    try {
+      unitCost = calculateNormalizedUnitCost(item.cost_per_unit, storageUnit, recipeUnit)
+    } catch {
+      unitCost = item.cost_per_unit
+    }
+    return acc + unitCost * curr.quantity
   }, 0)
 
   const subRecipesCost = selectedSubRecipes.reduce((acc, curr) => {
@@ -80,9 +90,10 @@ export function CreateRecipeDialog({
 
   function addIngredientRow() {
     if (availableIngredients.length === 0) return
+    const defaultIng = availableIngredients[0]
     setSelectedIngredients((prev) => [
       ...prev,
-      { ingredient_id: availableIngredients[0].id, quantity: 1 },
+      { ingredient_id: defaultIng.id, quantity: 1, unit: defaultIng.unit || 'und' },
     ])
   }
 
@@ -273,55 +284,96 @@ export function CreateRecipeDialog({
                 <div className="space-y-2">
                   {selectedIngredients.map((item, idx) => {
                     const currentIng = availableIngredients.find((i) => i.id === item.ingredient_id)
-                    const subCost = (currentIng ? currentIng.cost_per_unit : 0) * item.quantity
+                    const storageUnit = currentIng?.unit || 'und'
+                    const recipeUnit = item.unit || storageUnit
+                    let unitCost = currentIng ? currentIng.cost_per_unit : 0
+                    try {
+                      unitCost = calculateNormalizedUnitCost(unitCost, storageUnit, recipeUnit)
+                    } catch {
+                      // ignore
+                    }
+                    const subCost = unitCost * item.quantity
+                    const sanity = checkRecipeQuantitySanity(item.quantity, recipeUnit)
 
                     return (
-                      <div key={idx} className="flex items-center gap-2 p-2 rounded-lg border bg-muted/20">
-                        <div className="flex-1">
-                          <select
-                            value={item.ingredient_id}
-                            onChange={(e) => {
-                              const val = e.target.value
-                              setSelectedIngredients((prev) =>
-                                prev.map((row, i) => (i === idx ? { ...row, ingredient_id: val } : row))
-                              )
-                            }}
-                            className="w-full h-8 rounded-md border border-input bg-transparent px-2 text-xs"
+                      <div key={idx} className="space-y-1 p-2 rounded-lg border bg-muted/20">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1">
+                            <select
+                              value={item.ingredient_id}
+                              onChange={(e) => {
+                                const val = e.target.value
+                                const ing = availableIngredients.find((i) => i.id === val)
+                                setSelectedIngredients((prev) =>
+                                  prev.map((row, i) =>
+                                    i === idx
+                                      ? { ...row, ingredient_id: val, unit: ing?.unit || 'und' }
+                                      : row
+                                  )
+                                )}
+                              }
+                              className="w-full h-8 rounded-md border border-input bg-transparent px-2 text-xs"
+                            >
+                              {availableIngredients.map((ing) => (
+                                <option key={ing.id} value={ing.id}>
+                                  {ing.name} (${ing.cost_per_unit.toFixed(2)} / {ing.unit})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="w-20">
+                            <Input
+                              type="number"
+                              step="0.001"
+                              value={item.quantity}
+                              onChange={(e) => {
+                                const qty = parseFloat(e.target.value) || 0
+                                setSelectedIngredients((prev) =>
+                                  prev.map((row, i) => (i === idx ? { ...row, quantity: qty } : row))
+                                )
+                              }}
+                              className="h-8 text-xs font-mono"
+                              placeholder="Cant."
+                            />
+                          </div>
+                          <div className="w-24">
+                            <select
+                              value={recipeUnit}
+                              onChange={(e) => {
+                                const newUnit = e.target.value
+                                setSelectedIngredients((prev) =>
+                                  prev.map((row, i) => (i === idx ? { ...row, unit: newUnit } : row))
+                                )
+                              }}
+                              className="w-full h-8 rounded-md border border-input bg-transparent px-1.5 text-xs"
+                            >
+                              <option value="gr">gr (gramos)</option>
+                              <option value="kg">kg (kilos)</option>
+                              <option value="ml">ml (mililitros)</option>
+                              <option value="lt">lt (litros)</option>
+                              <option value="und">und (unidades)</option>
+                              <option value="porcion">porción</option>
+                            </select>
+                          </div>
+                          <div className="w-16 text-right font-mono font-semibold text-[11px] text-foreground">
+                            ${subCost.toFixed(2)}
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-xs"
+                            onClick={() => removeIngredientRow(idx)}
+                            className="text-muted-foreground hover:text-destructive"
                           >
-                            {availableIngredients.map((ing) => (
-                              <option key={ing.id} value={ing.id}>
-                                {ing.name} (${ing.cost_per_unit.toFixed(2)} / {ing.unit})
-                              </option>
-                            ))}
-                          </select>
+                            <Trash2 className="size-3.5" />
+                          </Button>
                         </div>
-                        <div className="w-24">
-                          <Input
-                            type="number"
-                            step="0.001"
-                            value={item.quantity}
-                            onChange={(e) => {
-                              const qty = parseFloat(e.target.value) || 0
-                              setSelectedIngredients((prev) =>
-                                prev.map((row, i) => (i === idx ? { ...row, quantity: qty } : row))
-                              )
-                            }}
-                            className="h-8 text-xs font-mono"
-                            placeholder="Cantidad"
-                          />
-                        </div>
-                        <div className="w-16 text-right font-mono font-semibold text-[11px] text-foreground">
-                          ${subCost.toFixed(2)}
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-xs"
-                          onClick={() => removeIngredientRow(idx)}
-                          className="text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 className="size-3.5" />
-                        </Button>
+                        {!sanity.isSane && sanity.warningMessage && (
+                          <div className="flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 p-1.5 rounded-md">
+                            <AlertTriangle className="size-3.5 shrink-0" />
+                            <span>{sanity.warningMessage}</span>
+                          </div>
+                        )}
                       </div>
                     )
                   })}

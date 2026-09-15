@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { sanitizeText } from '@/lib/security'
 
 export interface CartItemInput {
   recipe_id: string
@@ -35,17 +36,28 @@ export async function processOrderAction(data: {
   table_id?: string | null
   type: string
   items: CartItemInput[]
-  subtotal: number
-  total: number
+  subtotal?: number
+  total?: number
   payment_method_id?: string
-  payment_method_name: string
+  payment_method_name?: string
   customer_id?: string | null
-  customer_name?: string
-  customer_phone?: string
-  notes?: string
+  customer_name?: string | null
+  customer_phone?: string | null
+  notes?: string | null
   is_paid?: boolean
   is_credit?: boolean
-  reference_number?: string
+  reference_number?: string | null
+  payments?: Array<{
+    payment_method_id: string
+    amount: number
+    reference_number?: string | null
+    amount_currency?: number | null
+    currency?: string | null
+    exchange_rate?: number | null
+    vault?: string | null
+  }>
+  discount?: number
+  taxRate?: number
 }) {
   const supabase = await createClient()
 
@@ -53,11 +65,16 @@ export async function processOrderAction(data: {
     throw new Error('La orden no tiene productos.')
   }
 
+  const sanitizedCustomerName = sanitizeText(data.customer_name)
+  const sanitizedNotes = sanitizeText(data.notes)
   const isCredit = data.is_credit === true || data.payment_method_name === 'Crédito'
   const isPaid = !isCredit && data.is_paid !== false
   const orderStatus = isPaid || isCredit ? 'completed' : 'active'
   const paymentStatus = isCredit ? 'credit' : isPaid ? 'paid' : 'pending'
   const kitchenStatus = 'pending'
+
+  const calculatedSubtotal = data.subtotal ?? data.items.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0)
+  const calculatedTotal = data.total ?? calculatedSubtotal
 
   // 1. Crear orden
   const { data: order, error: orderErr } = await supabase
@@ -66,14 +83,14 @@ export async function processOrderAction(data: {
       type: data.type || 'dine_in',
       table_id: data.table_id || null,
       customer_id: data.customer_id || null,
-      customer_name: data.customer_name || (data.table_id ? 'Mesa Salón' : 'Cliente Mostrador'),
-      customer_phone: data.customer_phone || null,
+      customer_name: sanitizedCustomerName || (data.table_id ? 'Mesa Salón' : 'Cliente Mostrador'),
+      customer_phone: sanitizeText(data.customer_phone) || null,
       status: orderStatus,
       payment_status: paymentStatus,
       kitchen_status: kitchenStatus,
-      subtotal: data.subtotal,
-      total: data.total,
-      notes: data.notes || (isCredit ? 'Venta a Crédito / Cuenta Corriente' : null),
+      subtotal: calculatedSubtotal,
+      total: calculatedTotal,
+      notes: sanitizedNotes || (isCredit ? 'Venta a Crédito / Cuenta Corriente' : null),
     })
     .select('id')
     .single()
@@ -91,7 +108,7 @@ export async function processOrderAction(data: {
     quantity: item.quantity,
     unit_price: item.unit_price,
     subtotal: item.quantity * item.unit_price,
-    notes: item.notes || null,
+    notes: sanitizeText(item.notes) || null,
     kitchen_status: 'pending',
   }))
 
@@ -106,7 +123,7 @@ export async function processOrderAction(data: {
     const { data: m } = await supabase
       .from('payment_methods')
       .select('id')
-      .eq('name', data.payment_method_name)
+      .eq('name', data.payment_method_name || '')
       .limit(1)
       .single()
     methodId = m?.id || '00000000-0000-0000-0000-000000000000'
@@ -124,7 +141,7 @@ export async function processOrderAction(data: {
     await supabase.from('order_payments').insert({
       order_id: orderId,
       payment_method_id: methodId,
-      amount: data.total,
+      amount: calculatedTotal,
       reference_number: refNumber,
     })
   }
@@ -145,8 +162,8 @@ export async function processOrderAction(data: {
       await supabase
         .from('profiles')
         .update({
-          current_debt: currentDebt + data.total,
-          total_spent: totalSpent + data.total,
+          current_debt: currentDebt + calculatedTotal,
+          total_spent: totalSpent + calculatedTotal,
           total_orders_count: ordersCount + 1,
         })
         .eq('id', data.customer_id)

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { sanitizeText } from '@/lib/security'
 
 /**
  * Crea un nuevo cliente en el directorio (tabla profiles con role='customer')
@@ -9,10 +10,10 @@ import { revalidatePath } from 'next/cache'
 export async function createCustomerAction(formData: FormData) {
   const supabase = await createClient()
 
-  const fullName = (formData.get('full_name') as string)?.trim()
+  const fullName = sanitizeText(formData.get('full_name') as string)
   const email = (formData.get('email') as string)?.trim() || null
-  const phone = (formData.get('phone') as string)?.trim() || null
-  const address = (formData.get('address') as string)?.trim() || null
+  const phone = sanitizeText(formData.get('phone') as string) || null
+  const address = sanitizeText(formData.get('address') as string) || null
   const birthDate = (formData.get('birth_date') as string)?.trim() || null
   const creditLimit = parseFloat(formData.get('credit_limit') as string) || 0
 
@@ -62,10 +63,10 @@ export async function updateCustomerAction(formData: FormData) {
   const supabase = await createClient()
 
   const customerId = formData.get('customer_id') as string
-  const fullName = (formData.get('full_name') as string)?.trim()
+  const fullName = sanitizeText(formData.get('full_name') as string)
   const email = (formData.get('email') as string)?.trim() || null
-  const phone = (formData.get('phone') as string)?.trim() || null
-  const address = (formData.get('address') as string)?.trim() || null
+  const phone = sanitizeText(formData.get('phone') as string) || null
+  const address = sanitizeText(formData.get('address') as string) || null
   const birthDate = (formData.get('birth_date') as string)?.trim() || null
 
   if (!customerId || !fullName) {
@@ -131,8 +132,8 @@ export async function recordCreditPaymentAction(formData: FormData) {
   const customerId = formData.get('customer_id') as string
   const amount = parseFloat(formData.get('amount') as string) || 0
   const paymentMethodId = (formData.get('payment_method_id') as string) || ''
-  const referenceNumber = (formData.get('reference_number') as string)?.trim() || null
-  const notes = (formData.get('notes') as string)?.trim() || null
+  const referenceNumber = sanitizeText(formData.get('reference_number') as string) || null
+  const notes = sanitizeText(formData.get('notes') as string) || null
 
   if (!customerId) {
     throw new Error('Debe seleccionar un cliente.')
@@ -209,10 +210,10 @@ export async function recordCreditPaymentAction(formData: FormData) {
 export async function createMarketingCampaignAction(formData: FormData) {
   const supabase = await createClient()
 
-  const name = (formData.get('name') as string)?.trim()
+  const name = sanitizeText(formData.get('name') as string)
   const type = (formData.get('type') as string) || 'whatsapp' // 'whatsapp' | 'sms' | 'email'
   const targetAudience = (formData.get('target_audience') as string) || 'all'
-  const message = (formData.get('message') as string)?.trim()
+  const message = sanitizeText(formData.get('message') as string)
   const sendNow = formData.get('send_now') === 'true'
 
   if (!name || !message) {

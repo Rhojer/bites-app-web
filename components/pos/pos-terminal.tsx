@@ -39,6 +39,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { processOrderAction } from '@/app/pos/actions'
 import { CustomerSelector, CustomerOption } from '@/components/pos/customer-selector'
 import { ButtonGroup, ButtonGroupItem } from '@/components/ui/button-group'
+import { MobileCartDrawer } from '@/components/pos/mobile-cart-drawer'
 
 interface RecipeItem {
   id: string
@@ -69,7 +70,16 @@ interface CartItem {
   notes: string
 }
 
-const QUICK_NOTES = ['Sin cebolla', 'Para llevar', 'Extra salsa', 'Bien cocido', 'Sin sal', 'Poco picante']
+const QUICK_NOTES = [
+  'Sin cebolla',
+  'Término medio',
+  'Extra queso',
+  'Para llevar',
+  'Sin sal',
+  'Poco picante',
+  'Salsa aparte',
+  'Bien cocido'
+]
 const CASH_DENOMINATIONS = [5, 10, 20, 50, 100]
 
 export function PosTerminal({ recipes, tables, customers = [] }: PosTerminalProps) {
@@ -335,15 +345,15 @@ export function PosTerminal({ recipes, tables, customers = [] }: PosTerminalProp
                   placeholder="Nota de cocina (ej: Sin cebolla, extra salsa)..."
                   value={item.notes}
                   onChange={(e) => updateNotes(item.recipe_id, e.target.value)}
-                  className="h-8 text-xs bg-muted/20"
+                  className="h-9 text-base sm:text-xs bg-muted/20"
                 />
-                <div className="flex items-center gap-1 overflow-x-auto pb-0.5 scrollbar-none">
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
                   {QUICK_NOTES.map((qn) => (
                     <button
                       key={qn}
                       type="button"
                       onClick={() => appendQuickNote(item.recipe_id, qn)}
-                      className="text-[10px] px-2 py-0.5 rounded-full bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted font-medium shrink-0 transition-colors"
+                      className="text-[11px] px-2.5 py-1 rounded-full bg-muted/70 text-foreground hover:bg-muted font-medium shrink-0 transition-all active:scale-95 border shadow-2xs"
                     >
                       + {qn}
                     </button>
@@ -382,7 +392,7 @@ export function PosTerminal({ recipes, tables, customers = [] }: PosTerminalProp
   )
 
   return (
-    <div className="relative pb-20 lg:pb-0">
+    <div className="relative pb-24 lg:pb-0">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Catálogo de Productos y Selector de Modo (8 columnas en desktop) */}
         <div className="lg:col-span-8 space-y-4">
@@ -423,14 +433,14 @@ export function PosTerminal({ recipes, tables, customers = [] }: PosTerminalProp
                   placeholder="Buscar plato..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="h-9 pl-8 text-xs bg-muted/20"
+                  className="h-9 pl-8 text-base sm:text-xs bg-muted/20"
                 />
               </div>
               <Input
                 placeholder="Mesa / Cliente..."
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-                className="h-9 w-32 sm:w-36 text-xs"
+                className="h-9 w-32 sm:w-36 text-base sm:text-xs"
               />
             </div>
           </div>
@@ -523,46 +533,17 @@ export function PosTerminal({ recipes, tables, customers = [] }: PosTerminalProp
         </div>
       </div>
 
-      {/* Barra Flotante Móvil/Tablet (< lg) */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 p-3 bg-card/95 backdrop-blur-md border-t z-30 shadow-lg flex items-center justify-between gap-3">
-        <Sheet open={mobileCartOpen} onOpenChange={setMobileCartOpen}>
-          <SheetTrigger
-            render={
-              <button
-                className="flex items-center gap-2.5 text-left text-foreground hover:opacity-80 transition-opacity"
-              />
-            }
-          >
-            <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
-              <ShoppingBag className="size-5" />
-            </div>
-            <div>
-              <p className="text-xs font-bold leading-tight text-foreground">
-                {totalItemsCount} {totalItemsCount === 1 ? 'plato' : 'platos'} en comanda
-              </p>
-              <p className="font-mono font-extrabold text-sm text-primary leading-tight">
-                ${total.toFixed(2)}
-              </p>
-            </div>
-          </SheetTrigger>
-          <SheetContent side="bottom" className="p-4 rounded-t-3xl max-h-[85vh] overflow-y-auto">
-            <SheetHeader className="pb-2">
-              <SheetTitle>Resumen de Comanda</SheetTitle>
-            </SheetHeader>
-            {renderCartContent(true)}
-          </SheetContent>
-        </Sheet>
-
-        <Button
-          size="lg"
-          className="font-bold gap-2 px-5 h-11 rounded-xl shadow-md text-xs sm:text-sm active:scale-95 transition-transform"
-          disabled={cart.length === 0}
-          onClick={() => setCheckoutOpen(true)}
-        >
-          <CheckCircle2 className="size-4" />
-          <span>Cobrar ${total.toFixed(2)}</span>
-        </Button>
-      </div>
+      {/* Cajón y Barra Flotante Táctil para Móviles / Tablets (< lg) */}
+      <MobileCartDrawer
+        itemCount={totalItemsCount}
+        totalUSD={total}
+        totalVES={totalBs}
+        open={mobileCartOpen}
+        onOpenChange={setMobileCartOpen}
+        onCheckout={() => setCheckoutOpen(true)}
+      >
+        {renderCartContent(true)}
+      </MobileCartDrawer>
 
       {/* Modal de Cobro Multi-Método con Calculadora de Efectivo */}
       <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>

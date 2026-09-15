@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { sanitizeText } from '@/lib/security'
 
 interface RecipeIngredientInput {
   ingredient_id: string
@@ -29,20 +30,29 @@ export async function createRecipeAction(data: {
 }) {
   const supabase = await createClient()
 
+  const name = sanitizeText(data.name)
+  const description = data.description ? sanitizeText(data.description) : null
+  const yield_unit = data.yield_unit ? sanitizeText(data.yield_unit) : 'porción'
+  const category = data.category ? sanitizeText(data.category) : 'General'
+
+  if (!name) {
+    throw new Error('El nombre de la receta es obligatorio.')
+  }
+
   // 1. Insertar receta base
   const { data: recipe, error: insertErr } = await supabase
     .from('recipes')
     .insert({
-      name: data.name,
-      description: data.description || null,
+      name,
+      description,
       type: data.type,
       price: data.type === 'final_product' ? data.price || 0 : null,
       prep_time_minutes: data.prep_time_minutes || 15,
       cook_time_minutes: data.cook_time_minutes || 15,
       servings: data.servings || 1,
       yield_quantity: data.yield_quantity || 1,
-      yield_unit: data.yield_unit || 'porción',
-      category: data.category || 'General',
+      yield_unit,
+      category,
       is_published: true,
     })
     .select('id')

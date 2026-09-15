@@ -1,5 +1,11 @@
+export type VaultType = 'cash_usd' | 'cash_ves' | 'bank_ves' | 'bank_usd'
+
 export interface CashPayment {
   amount: number
+  amount_currency?: number | null
+  currency?: string | null // 'USD' | 'VES'
+  exchange_rate?: number | null
+  vault?: VaultType | null
   payment_method_id?: string
   payment_method_name?: string
   is_cash?: boolean
@@ -10,9 +16,24 @@ export interface CashExpenseItem {
   id?: string
   amount: number
   category: string
-  notes: string
+  notes?: string | null
   recipient?: string | null
   currency?: string | null
+  vault?: VaultType | null
+  exchange_rate?: number | null
+  created_at?: string
+}
+
+export interface CurrencyExchangeRecord {
+  id?: string
+  from_vault: VaultType
+  to_vault: VaultType
+  from_amount: number
+  from_currency: 'USD' | 'VES'
+  to_amount: number
+  to_currency: 'USD' | 'VES'
+  exchange_rate: number
+  notes?: string | null
   created_at?: string
 }
 
@@ -32,6 +53,14 @@ export interface CashArqueoResult {
   difference: number
   status: 'balanced' | 'surplus' | 'deficit'
   message: string
+}
+
+export interface MultiVaultBalances {
+  cash_usd: { nominal: number; currency: 'USD'; label: string }
+  cash_ves: { nominal: number; currency: 'VES'; label: string }
+  bank_ves: { nominal: number; currency: 'VES'; label: string }
+  bank_usd: { nominal: number; currency: 'USD'; label: string }
+  totalEquivalentUSD: number
 }
 
 /**
@@ -69,8 +98,149 @@ export function validateCashExpense(data: {
 }
 
 /**
- * Calcula el balance y saldo esperado en caja:
- * Saldo Esperado en Efectivo = Fondo Inicial + Ventas en Efectivo - Egresos Justificados con Nota
+ * Mapea un método de pago a su bóveda correspondiente si no viene explícita.
+ */
+export function mapPaymentToVault(payment: CashPayment): VaultType {
+  if (payment.vault) return payment.vault
+
+  const name = (payment.payment_method_name || '').toLowerCase()
+  if (name.includes('zelle') || name.includes('dólares') || name.includes('usd') && !name.includes('efectivo')) {
+    return 'bank_usd'
+  }
+  if (name.includes('pago móvil') || name.includes('punto') || name.includes('tarjeta') || name.includes('transferencia')) {
+    return 'bank_ves'
+  }
+  if (name.includes('efectivo bs') || name.includes('bolívares') || name.includes('bolivares') || payment.currency === 'VES') {
+    return 'cash_ves'
+  }
+  return 'cash_usd'
+}
+
+/**
+ * Calcula los saldos estáticos e inmutables de las 4 bóvedas del negocio:
+ * 1. cash_usd: Gaveta Efectivo USD ($)
+ * 2. cash_ves: Gaveta Efectivo Bs (Bs.)
+ * 3. bank_ves: Banco Bolívares (Pago Móvil / Punto de Venta)
+ * 4. bank_usd: Banco Dólares (Zelle / Divisas)
+ *
+ * Incluye ingresos por ventas, egresos clasificados por bóveda y canjes/transferencias manuales de divisas.
+ * Garantiza que los fondos en Bolívares no fluctúan retrospectivamente cuando la tasa BCV cambia.
+ */
+export function calculateMultiVaultBalances(params: {
+  initialBalances?: Partial<Record<VaultType, number>>
+  payments: CashPayment[]
+  expenses: CashExpenseItem[]
+  exchanges?: CurrencyExchangeRecord[]
+  currentBcvRate?: number
+}): MultiVaultBalances {
+  const initial = {
+    cash_usd: params.initialBalances?.cash_usd || 0,
+    cash_ves: params.initialBalances?.cash_ves || 0,
+    bank_ves: params.initialBalances?.bank_ves || 0,
+    bank_usd: params.initialBalances?.bank_usd || 0,
+  }
+
+  let balCashUSD = initial.cash_usd
+  let balCashVES = initial.cash_ves
+  let balBankVES = initial.bank_ves
+  let balBankUSD = initial.bank_usd
+
+  // 1. Sumar ingresos por cobros de órdenes en sus monedas nominales
+  for (const p of params.payments) {
+    const vault = mapPaymentToVault(p)
+    const nominalAmount = p.amount_currency ?? p.amount
+
+    switch (vault) {
+      case 'cash_usd':
+        balCashUSD += p.currency === 'VES' && p.exchange_rate ? nominalAmount / p.exchange_rate : nominalAmount
+        break
+      case 'cash_ves':
+        balCashVES += p.currency === 'USD' && p.exchange_rate ? nominalAmount * p.exchange_rate : nominalAmount
+        break
+      case 'bank_ves':
+        balBankVES += p.currency === 'USD' && p.exchange_rate ? nominalAmount * p.exchange_rate : nominalAmount
+        break
+      case 'bank_usd':
+        balBankUSD += p.currency === 'VES' && p.exchange_rate ? nominalAmount / p.exchange_rate : nominalAmount
+        break
+    }
+  }
+
+  // 2. Restar egresos justificados por bóveda
+  for (const exp of params.expenses) {
+    const vault = exp.vault || 'cash_usd'
+    const amount = exp.amount || 0
+
+    switch (vault) {
+      case 'cash_usd':
+        balCashUSD -= amount
+        break
+      case 'cash_ves':
+        balCashVES -= amount
+        break
+      case 'bank_ves':
+        balBankVES -= amount
+        break
+      case 'bank_usd':
+        balBankUSD -= amount
+        break
+    }
+  }
+
+  // 3. Procesar canjes/transferencias manuales de divisas entre bóvedas
+  if (params.exchanges) {
+    for (const ex of params.exchanges) {
+      // Débito en la bóveda de origen
+      switch (ex.from_vault) {
+        case 'cash_usd':
+          balCashUSD -= ex.from_amount
+          break
+        case 'cash_ves':
+          balCashVES -= ex.from_amount
+          break
+        case 'bank_ves':
+          balBankVES -= ex.from_amount
+          break
+        case 'bank_usd':
+          balBankUSD -= ex.from_amount
+          break
+      }
+
+      // Crédito en la bóveda de destino
+      switch (ex.to_vault) {
+        case 'cash_usd':
+          balCashUSD += ex.to_amount
+          break
+        case 'cash_ves':
+          balCashVES += ex.to_amount
+          break
+        case 'bank_ves':
+          balBankVES += ex.to_amount
+          break
+        case 'bank_usd':
+          balBankUSD += ex.to_amount
+          break
+      }
+    }
+  }
+
+  const rate = params.currentBcvRate && params.currentBcvRate > 0 ? params.currentBcvRate : 1
+  const totalEquivalentUSD =
+    balCashUSD +
+    balBankUSD +
+    (balCashVES + balBankVES) / rate
+
+  return {
+    cash_usd: { nominal: Number(balCashUSD.toFixed(2)), currency: 'USD', label: 'Gaveta Efectivo USD' },
+    cash_ves: { nominal: Number(balCashVES.toFixed(2)), currency: 'VES', label: 'Gaveta Efectivo Bs' },
+    bank_ves: { nominal: Number(balBankVES.toFixed(2)), currency: 'VES', label: 'Banco Bolívares (Pago Móvil / POS)' },
+    bank_usd: { nominal: Number(balBankUSD.toFixed(2)), currency: 'USD', label: 'Banco Dólares (Zelle / Divisas)' },
+    totalEquivalentUSD: Number(totalEquivalentUSD.toFixed(2)),
+  }
+}
+
+/**
+ * Calcula el balance y saldo esperado en caja (método tradicional/monocaja compatible).
  */
 export function calculateCashRegisterBalance(params: {
   initialCash: number
@@ -98,7 +268,6 @@ export function calculateCashRegisterBalance(params: {
   const totalIncomeAll = totalIncomeCash + totalIncomeNonCash
   const totalExpenses = params.expenses.reduce((acc, curr) => acc + (curr.amount || 0), 0)
 
-  // En el cajón físico de efectivo: Fondo + Ventas Efectivo - Retiros/Egresos
   const expectedCashInDrawer = initialCash + (params.filterCashOnly !== false ? totalIncomeCash : totalIncomeAll) - totalExpenses
   const totalNetFlow = totalIncomeAll - totalExpenses
 
