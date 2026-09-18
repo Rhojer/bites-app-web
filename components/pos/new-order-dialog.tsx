@@ -30,12 +30,16 @@ import {
   AlertCircle,
   Coins,
   ShieldCheck,
-  UserCheck
+  UserCheck,
+  SlidersHorizontal,
+  Scissors
 } from 'lucide-react'
 import { processOrderAction, CartItemInput } from '@/app/pos/actions'
 import { formatBs, convertUsdToBs } from '@/lib/bcv'
 import { CustomerSelector, CustomerOption } from '@/components/pos/customer-selector'
 import { ButtonGroup, ButtonGroupItem } from '@/components/ui/button-group'
+import { addItemToCart, splitCartItem, customizeCartItem } from '@/lib/domain/pos'
+import { CustomizeItemDialog } from '@/components/pos/customize-item-dialog'
 
 interface RecipeItem {
   id: string
@@ -56,11 +60,13 @@ interface NewOrderDialogProps {
   recipes: RecipeItem[]
   tables: TableItem[]
   customers?: CustomerOption[]
+  recipeIngredientsMap?: Record<string, string[]>
   trigger?: React.ReactNode
   onSuccess?: () => void
 }
 
 interface CartItem extends CartItemInput {
+  id: string
   category?: string
 }
 
@@ -71,6 +77,7 @@ export function NewOrderDialog({
   recipes,
   tables,
   customers = [],
+  recipeIngredientsMap = {},
   trigger,
   onSuccess,
 }: NewOrderDialogProps) {
@@ -84,6 +91,9 @@ export function NewOrderDialog({
   const [selectedCategory, setSelectedCategory] = useState('ALL')
   const [searchTerm, setSearchTerm] = useState('')
   const [cart, setCart] = useState<CartItem[]>([])
+
+  // Modal de personalización de ingredientes
+  const [customizingItem, setCustomizingItem] = useState<CartItem | null>(null)
 
   // Modal de pago directo
   const [isPayingNow, setIsPayingNow] = useState(false)
@@ -114,30 +124,14 @@ export function NewOrderDialog({
   })
 
   function addToCart(recipe: RecipeItem) {
-    setCart((prev) => {
-      const exists = prev.find((i) => i.recipe_id === recipe.id)
-      if (exists) {
-        return prev.map((i) => (i.recipe_id === recipe.id ? { ...i, quantity: i.quantity + 1 } : i))
-      }
-      return [
-        ...prev,
-        {
-          recipe_id: recipe.id,
-          name: recipe.name,
-          quantity: 1,
-          unit_price: recipe.price || 0,
-          notes: '',
-          category: recipe.category,
-        },
-      ]
-    })
+    setCart((prev) => addItemToCart(prev, recipe) as CartItem[])
   }
 
-  function updateQuantity(recipe_id: string, delta: number) {
+  function updateQuantity(itemId: string, delta: number) {
     setCart((prev) =>
       prev
         .map((i) => {
-          if (i.recipe_id === recipe_id) {
+          if (i.id === itemId) {
             const nextQty = i.quantity + delta
             return nextQty > 0 ? { ...i, quantity: nextQty } : null
           }
@@ -147,19 +141,32 @@ export function NewOrderDialog({
     )
   }
 
-  function updateItemNotes(recipe_id: string, notes: string) {
-    setCart((prev) => prev.map((i) => (i.recipe_id === recipe_id ? { ...i, notes } : i)))
+  function handleSplitItem(itemId: string) {
+    const { updatedCart } = splitCartItem(cart, itemId, 1)
+    setCart(updatedCart as CartItem[])
   }
 
-  function appendQuickNote(recipe_id: string, noteText: string) {
+  function updateItemNotes(itemId: string, notes: string) {
+    setCart((prev) => prev.map((i) => (i.id === itemId ? { ...i, notes } : i)))
+  }
+
+  function appendQuickNote(item: CartItem, noteText: string) {
+    if (item.quantity > 1) {
+      setCustomizingItem(item)
+      return
+    }
     setCart((prev) =>
       prev.map((i) => {
-        if (i.recipe_id !== recipe_id) return i
+        if (i.id !== item.id) return i
         const existing = (i.notes || '').trim()
         const newNotes = existing ? `${existing}, ${noteText}` : noteText
         return { ...i, notes: newNotes }
       })
     )
+  }
+
+  function handleSaveCustomization(itemId: string, notes: string, applyMode: 'single' | 'all') {
+    setCart((prev) => customizeCartItem(prev, itemId, notes, applyMode) as CartItem[])
   }
 
   const totalItemsCount = cart.reduce((acc, curr) => acc + curr.quantity, 0)
@@ -242,6 +249,7 @@ export function NewOrderDialog({
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
       <DialogTrigger
         render={
@@ -468,9 +476,16 @@ export function NewOrderDialog({
               ) : (
                 <div className="space-y-2.5 max-h-[240px] overflow-y-auto pr-1 mt-2">
                   {cart.map((item) => (
-                    <div key={item.recipe_id} className="p-2.5 rounded-xl border bg-muted/20 space-y-2">
+                    <div key={item.id} className="p-2.5 rounded-xl border bg-muted/20 space-y-2">
                       <div className="flex items-start justify-between gap-2">
-                        <span className="font-bold text-xs text-foreground leading-snug">{item.name}</span>
+                        <div>
+                          <span className="font-bold text-xs text-foreground leading-snug block">{item.name}</span>
+                          {item.quantity > 1 && (
+                            <span className="text-[10px] text-muted-foreground">
+                              {item.quantity} unidades agrupadas
+                            </span>
+                          )}
+                        </div>
                         <div className="text-right">
                           <span className="font-mono font-bold text-xs text-primary block leading-none">
                             ${(item.quantity * item.unit_price).toFixed(2)}
@@ -485,7 +500,7 @@ export function NewOrderDialog({
                         <div className="flex items-center gap-1 bg-card px-1 py-0.5 rounded-md border">
                           <button
                             type="button"
-                            onClick={() => updateQuantity(item.recipe_id, -1)}
+                            onClick={() => updateQuantity(item.id, -1)}
                             className="size-6 flex items-center justify-center hover:bg-muted rounded"
                           >
                             <Minus className="size-3" />
@@ -495,22 +510,71 @@ export function NewOrderDialog({
                           </span>
                           <button
                             type="button"
-                            onClick={() => updateQuantity(item.recipe_id, 1)}
+                            onClick={() => updateQuantity(item.id, 1)}
                             className="size-6 flex items-center justify-center hover:bg-muted rounded"
                           >
                             <Plus className="size-3" />
                           </button>
                         </div>
+
+                        <div className="flex items-center gap-1">
+                          {/* Botón para separar 1 unidad si hay varias */}
+                          {item.quantity > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleSplitItem(item.id)}
+                              className="h-6 px-1.5 rounded-md border border-primary/30 text-primary hover:bg-primary/10 text-[10px] font-semibold flex items-center gap-1"
+                              title="Separa 1 unidad en otra fila para personalizarla por separado"
+                            >
+                              <Scissors className="size-2.5" />
+                              <span>Separar 1</span>
+                            </button>
+                          )}
+
+                          {/* Botón para personalizar / quitar ingredientes */}
+                          <button
+                            type="button"
+                            onClick={() => setCustomizingItem(item)}
+                            className={`h-6 px-1.5 rounded-md border text-[10px] font-semibold flex items-center gap-1 ${
+                              item.notes
+                                ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-600 font-bold'
+                                : 'border-input bg-card text-muted-foreground hover:text-foreground'
+                            }`}
+                            title="Personalizar o quitar ingredientes de este plato"
+                          >
+                            <SlidersHorizontal className="size-2.5" />
+                            <span>{item.notes ? 'Modificado' : 'Personalizar'}</span>
+                          </button>
+                        </div>
+
                         <span className="text-[10px] font-mono text-muted-foreground">
                           ${item.unit_price.toFixed(2)} c/u
                         </span>
                       </div>
 
+                      {/* Etiqueta de notas culinarias si existen */}
+                      {item.notes && (
+                        <div className="flex items-center justify-between p-1.5 px-2 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-900 dark:text-amber-200 text-[11px] font-semibold">
+                          <span className="flex items-center gap-1 truncate">
+                            <span>⚠️</span>
+                            <span className="truncate">{item.notes}</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => updateItemNotes(item.id, '')}
+                            className="text-[10px] text-muted-foreground hover:text-destructive shrink-0 ml-1.5"
+                            title="Restablecer a estándar"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      )}
+
                       {/* Notas culinarias del plato */}
                       <Input
                         placeholder="Nota de cocina (ej: Sin cebolla)..."
                         value={item.notes || ''}
-                        onChange={(e) => updateItemNotes(item.recipe_id, e.target.value)}
+                        onChange={(e) => updateItemNotes(item.id, e.target.value)}
                         className="h-7 text-[11px] bg-card"
                       />
                       <div className="flex items-center gap-1 overflow-x-auto pb-0.5 scrollbar-none">
@@ -518,7 +582,7 @@ export function NewOrderDialog({
                           <button
                             key={qn}
                             type="button"
-                            onClick={() => appendQuickNote(item.recipe_id, qn)}
+                            onClick={() => appendQuickNote(item, qn)}
                             className="text-[9px] px-1.5 py-0.5 rounded-md bg-card border text-muted-foreground hover:text-foreground font-medium shrink-0"
                           >
                             + {qn}
@@ -687,5 +751,17 @@ export function NewOrderDialog({
         </div>
       </DialogContent>
     </Dialog>
+
+    {/* Diálogo para personalizar ingredientes de un plato individual o grupal */}
+    <CustomizeItemDialog
+      open={!!customizingItem}
+      onOpenChange={(op) => {
+        if (!op) setCustomizingItem(null)
+      }}
+      item={customizingItem}
+      ingredients={customizingItem ? (recipeIngredientsMap[customizingItem.recipe_id] || []) : []}
+      onSaveCustomization={handleSaveCustomization}
+    />
+    </>
   )
 }

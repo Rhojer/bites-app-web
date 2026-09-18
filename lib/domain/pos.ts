@@ -1,11 +1,13 @@
 import { IngredientItem, RecipeItem, RecipeIngredientRelation, RecipeSubRecipeRelation, getFlattenedIngredientRequirements } from './recipes'
 
 export interface POSCartItem {
+  id?: string
   recipe_id: string
   name?: string
   quantity: number
   unit_price: number
   notes?: string
+  category?: string
 }
 
 export interface OrderTotals {
@@ -132,4 +134,134 @@ export function calculatePOSInventoryDeductions(
     deductions,
     totalFoodCost: Number(totalFoodCost.toFixed(2)),
   }
+}
+
+/**
+ * Añade un plato al carrito.
+ * Si ya existe una línea con la misma receta Y SIN notas personalizadas, incrementa la cantidad.
+ * Si todas las líneas existentes están personalizadas, crea una nueva línea estándar independiente.
+ */
+export function addItemToCart(
+  cart: POSCartItem[],
+  recipe: { id: string; name?: string; price: number; category?: string }
+): POSCartItem[] {
+  const existingIndex = cart.findIndex(
+    (item) => item.recipe_id === recipe.id && (!item.notes || item.notes.trim() === '')
+  )
+
+  if (existingIndex !== -1) {
+    return cart.map((item, idx) =>
+      idx === existingIndex ? { ...item, quantity: item.quantity + 1 } : item
+    )
+  }
+
+  const newId = typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `item-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+
+  return [
+    ...cart,
+    {
+      id: newId,
+      recipe_id: recipe.id,
+      name: recipe.name || 'Plato',
+      quantity: 1,
+      unit_price: recipe.price,
+      notes: '',
+      category: recipe.category,
+    },
+  ]
+}
+
+/**
+ * Separa N unidades de una línea del carrito que tenga cantidad > 1.
+ * Permite que el usuario personalice una unidad individual sin afectar al resto.
+ */
+export function splitCartItem(
+  cart: POSCartItem[],
+  itemId: string,
+  countToSplit = 1
+): { updatedCart: POSCartItem[]; newSplitItemId: string | null } {
+  const item = cart.find((i) => i.id === itemId)
+  if (!item || item.quantity <= countToSplit || countToSplit <= 0) {
+    return { updatedCart: cart, newSplitItemId: null }
+  }
+
+  const newSplitId = typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `split-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+
+  const updatedCart = cart.flatMap((curr) => {
+    if (curr.id === itemId) {
+      return [
+        { ...curr, quantity: curr.quantity - countToSplit },
+        {
+          ...curr,
+          id: newSplitId,
+          quantity: countToSplit,
+          notes: '',
+        },
+      ]
+    }
+    return [curr]
+  })
+
+  return { updatedCart, newSplitItemId: newSplitId }
+}
+
+/**
+ * Aplica una personalización / nota de cocina a un plato.
+ * Si el plato tiene más de 1 unidad y applyMode es 'single' (por defecto):
+ * separa 1 unidad en su propia línea con la nota especificada, manteniendo las demás intactas.
+ * Si applyMode es 'all' o quantity === 1, aplica la nota a toda la línea.
+ */
+export function customizeCartItem(
+  cart: POSCartItem[],
+  itemId: string,
+  notes: string,
+  applyMode: 'all' | 'single' = 'single'
+): POSCartItem[] {
+  const item = cart.find((i) => i.id === itemId)
+  if (!item) return cart
+
+  if (applyMode === 'single' && item.quantity > 1) {
+    const newSplitId = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `custom-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+
+    return cart.flatMap((curr) => {
+      if (curr.id === itemId) {
+        return [
+          { ...curr, quantity: curr.quantity - 1 },
+          { ...curr, id: newSplitId, quantity: 1, notes: notes.trim() },
+        ]
+      }
+      return [curr]
+    })
+  }
+
+  return cart.map((curr) =>
+    curr.id === itemId ? { ...curr, notes: notes.trim() } : curr
+  )
+}
+
+/**
+ * Formatea exclusiones de ingredientes y notas adicionales en un texto limpio para cocina.
+ * Ej: ['Cebolla Morada', 'Tomate'] + 'Término medio' => 'Sin Cebolla Morada, Sin Tomate, Término medio'
+ */
+export function formatCulinaryExclusions(
+  excludedIngredients: string[],
+  extraNotes?: string
+): string {
+  const exclusions = excludedIngredients
+    .map((ing) => ing.trim())
+    .filter(Boolean)
+    .map((ing) => (ing.toLowerCase().startsWith('sin ') ? ing : `Sin ${ing}`))
+
+  const parts = [...exclusions]
+  if (extraNotes && extraNotes.trim()) {
+    parts.push(extraNotes.trim())
+  }
+
+  return parts.join(', ')
 }

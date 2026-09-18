@@ -9,19 +9,25 @@ export const dynamic = 'force-dynamic'
 export default async function PosPage() {
   const supabase = await createClient()
 
-  // 1. Obtener recetas, mesas, órdenes, ítems y clientes
+  // 1. Obtener recetas, mesas, órdenes, ítems, clientes e insumos para personalización
   const [
     { data: recipesData },
     { data: tablesData },
     { data: ordersData },
     { data: orderItemsData },
-    { data: profilesData }
+    { data: profilesData },
+    { data: recipeIngredientsData },
+    { data: ingredientsData },
+    { data: recipeSubRecipesData },
   ] = await Promise.all([
     supabase.from('recipes').select('*').order('name', { ascending: true }),
     supabase.from('restaurant_tables').select('*').order('number', { ascending: true }),
     supabase.from('orders').select('*').order('created_at', { ascending: false }),
     supabase.from('order_items').select('*'),
-    supabase.from('profiles').select('*').order('full_name', { ascending: true })
+    supabase.from('profiles').select('*').order('full_name', { ascending: true }),
+    supabase.from('recipe_ingredients').select('*'),
+    supabase.from('ingredients').select('id, name'),
+    supabase.from('recipe_sub_recipes').select('*'),
   ])
 
   const customers = (profilesData || []).map((p) => ({
@@ -50,6 +56,33 @@ export default async function PosPage() {
   const recipesMap = new Map<string, string>()
   for (const r of recipesData || []) {
     recipesMap.set(r.id, r.name || 'Plato')
+  }
+
+  const ingredientsNameMap = new Map<string, string>()
+  for (const ing of ingredientsData || []) {
+    ingredientsNameMap.set(ing.id, ing.name)
+  }
+
+  // Mapear ingredientes de cada receta para la personalización en POS
+  const recipeIngredientsMap: Record<string, string[]> = {}
+  for (const r of recipesData || []) {
+    const list: string[] = []
+    
+    // 1. Ingredientes directos
+    const direct = (recipeIngredientsData || []).filter((ri) => ri.recipe_id === r.id)
+    for (const d of direct) {
+      const name = ingredientsNameMap.get(d.ingredient_id)
+      if (name && !list.includes(name)) list.push(name)
+    }
+
+    // 2. Sub-recetas (ej: Salsa Especial, Cebolla Caramelizada)
+    const sub = (recipeSubRecipesData || []).filter((rs) => rs.parent_recipe_id === r.id)
+    for (const s of sub) {
+      const subName = recipesMap.get(s.child_recipe_id)
+      if (subName && !list.includes(subName)) list.push(subName)
+    }
+
+    recipeIngredientsMap[r.id] = list
   }
 
   const tablesMap = new Map<string, { number: string; name: string | null }>()
@@ -111,6 +144,7 @@ export default async function PosPage() {
           customers={customers}
           activeOrders={activeOrders}
           todayOrders={todayOrders}
+          recipeIngredientsMap={recipeIngredientsMap}
         />
       </main>
     </AdminShell>
