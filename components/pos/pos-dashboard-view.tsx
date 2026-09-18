@@ -33,6 +33,7 @@ interface PosDashboardViewProps {
   activeOrders: ActiveOrder[]
   todayOrders: ActiveOrder[]
   customers?: CustomerOption[]
+  recipeIngredientsMap?: Record<string, string[]>
 }
 
 export function PosDashboardView({
@@ -41,6 +42,7 @@ export function PosDashboardView({
   activeOrders,
   todayOrders,
   customers = [],
+  recipeIngredientsMap = {},
 }: PosDashboardViewProps) {
   const [activeTab, setActiveTab] = useState('active-orders')
 
@@ -81,6 +83,7 @@ export function PosDashboardView({
             recipes={recipes}
             tables={tables}
             customers={customers}
+            recipeIngredientsMap={recipeIngredientsMap}
             trigger={
               <Button
                 size="lg"
@@ -137,7 +140,12 @@ export function PosDashboardView({
 
         {/* 2. Terminal Rápida de Catálogo Directo */}
         <TabsContent value="fast-catalog" className="pt-1">
-          <PosTerminal recipes={recipes} tables={tables} customers={customers} />
+          <PosTerminal
+            recipes={recipes}
+            tables={tables}
+            customers={customers}
+            recipeIngredientsMap={recipeIngredientsMap}
+          />
         </TabsContent>
 
         {/* 3. Historial del Día */}

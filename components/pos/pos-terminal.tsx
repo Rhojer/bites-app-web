@@ -21,7 +21,9 @@ import {
   ChevronUp,
   X,
   Tag,
-  Coins
+  Coins,
+  SlidersHorizontal,
+  Scissors
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -40,6 +42,8 @@ import { processOrderAction } from '@/app/pos/actions'
 import { CustomerSelector, CustomerOption } from '@/components/pos/customer-selector'
 import { ButtonGroup, ButtonGroupItem } from '@/components/ui/button-group'
 import { MobileCartDrawer } from '@/components/pos/mobile-cart-drawer'
+import { addItemToCart, splitCartItem, customizeCartItem } from '@/lib/domain/pos'
+import { CustomizeItemDialog } from '@/components/pos/customize-item-dialog'
 
 interface RecipeItem {
   id: string
@@ -60,14 +64,17 @@ interface PosTerminalProps {
   recipes: RecipeItem[]
   tables: TableItem[]
   customers?: CustomerOption[]
+  recipeIngredientsMap?: Record<string, string[]>
 }
 
 interface CartItem {
+  id: string
   recipe_id: string
   name: string
   quantity: number
   unit_price: number
   notes: string
+  category?: string
 }
 
 const QUICK_NOTES = [
@@ -82,7 +89,12 @@ const QUICK_NOTES = [
 ]
 const CASH_DENOMINATIONS = [5, 10, 20, 50, 100]
 
-export function PosTerminal({ recipes, tables, customers = [] }: PosTerminalProps) {
+export function PosTerminal({
+  recipes,
+  tables,
+  customers = [],
+  recipeIngredientsMap = {},
+}: PosTerminalProps) {
   const [selectedCategory, setSelectedCategory] = useState('ALL')
   const [searchTerm, setSearchTerm] = useState('')
   const [cart, setCart] = useState<CartItem[]>([])
@@ -91,6 +103,9 @@ export function PosTerminal({ recipes, tables, customers = [] }: PosTerminalProp
   const [customerName, setCustomerName] = useState('')
   const [orderType, setOrderType] = useState<'dine_in' | 'takeaway' | 'delivery'>('dine_in')
   
+  // Customization Dialog State
+  const [customizingItem, setCustomizingItem] = useState<CartItem | null>(null)
+
   // Mobile Cart Sheet State
   const [mobileCartOpen, setMobileCartOpen] = useState(false)
 
@@ -126,31 +141,14 @@ export function PosTerminal({ recipes, tables, customers = [] }: PosTerminalProp
 
   // Cart operations
   function addToCart(recipe: RecipeItem) {
-    setCart((prev) => {
-      const existing = prev.find((item) => item.recipe_id === recipe.id)
-      if (existing) {
-        return prev.map((item) =>
-          item.recipe_id === recipe.id ? { ...item, quantity: item.quantity + 1 } : item
-        )
-      }
-      return [
-        ...prev,
-        {
-          recipe_id: recipe.id,
-          name: recipe.name,
-          quantity: 1,
-          unit_price: recipe.price || 0,
-          notes: '',
-        },
-      ]
-    })
+    setCart((prev) => addItemToCart(prev, recipe) as CartItem[])
   }
 
-  function updateQuantity(recipe_id: string, delta: number) {
+  function updateQuantity(itemId: string, delta: number) {
     setCart((prev) =>
       prev
         .map((item) => {
-          if (item.recipe_id === recipe_id) {
+          if (item.id === itemId) {
             const newQty = item.quantity + delta
             return newQty > 0 ? { ...item, quantity: newQty } : null
           }
@@ -160,21 +158,35 @@ export function PosTerminal({ recipes, tables, customers = [] }: PosTerminalProp
     )
   }
 
-  function updateNotes(recipe_id: string, notes: string) {
+  function handleSplitItem(itemId: string) {
+    const { updatedCart } = splitCartItem(cart, itemId, 1)
+    setCart(updatedCart as CartItem[])
+  }
+
+  function updateNotes(itemId: string, notes: string) {
     setCart((prev) =>
-      prev.map((item) => (item.recipe_id === recipe_id ? { ...item, notes } : item))
+      prev.map((item) => (item.id === itemId ? { ...item, notes } : item))
     )
   }
 
-  function appendQuickNote(recipe_id: string, noteText: string) {
+  function appendQuickNote(item: CartItem, noteText: string) {
+    if (item.quantity > 1) {
+      // Si tiene más de 1 unidad, abrir el modal para que el usuario confirme si aplica a 1 o a todas
+      setCustomizingItem(item)
+      return
+    }
     setCart((prev) =>
-      prev.map((item) => {
-        if (item.recipe_id !== recipe_id) return item
-        const existing = item.notes.trim()
+      prev.map((curr) => {
+        if (curr.id !== item.id) return curr
+        const existing = curr.notes.trim()
         const newNotes = existing ? `${existing}, ${noteText}` : noteText
-        return { ...item, notes: newNotes }
+        return { ...curr, notes: newNotes }
       })
     )
+  }
+
+  function handleSaveCustomization(itemId: string, notes: string, applyMode: 'single' | 'all') {
+    setCart((prev) => customizeCartItem(prev, itemId, notes, applyMode) as CartItem[])
   }
 
   function clearCart() {
@@ -300,21 +312,28 @@ export function PosTerminal({ recipes, tables, customers = [] }: PosTerminalProp
       ) : (
         <div className={`space-y-3 overflow-y-auto pr-1 ${isMobileSheet ? 'flex-1 max-h-[50vh]' : 'max-h-[380px]'}`}>
           {cart.map((item) => (
-            <div key={item.recipe_id} className="p-3 rounded-xl border bg-card shadow-2xs space-y-2.5">
+            <div key={item.id} className="p-3 rounded-xl border bg-card shadow-2xs space-y-2.5">
               <div className="flex items-start justify-between gap-2">
-                <span className="font-bold text-xs text-foreground leading-snug">{item.name}</span>
+                <div>
+                  <span className="font-bold text-xs text-foreground leading-snug block">{item.name}</span>
+                  {item.quantity > 1 && (
+                    <span className="text-[10px] text-muted-foreground">
+                      {item.quantity} unidades agrupadas
+                    </span>
+                  )}
+                </div>
                 <span className="font-mono font-bold text-xs text-primary shrink-0">
                   ${(item.quantity * item.unit_price).toFixed(2)}
                 </span>
               </div>
 
-              {/* Quantity Controls - Touch optimized */}
+              {/* Quantity Controls & Splitting */}
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 bg-muted/50 p-1 rounded-lg border">
                   <Button
                     size="icon-xs"
                     variant="ghost"
-                    onClick={() => updateQuantity(item.recipe_id, -1)}
+                    onClick={() => updateQuantity(item.id, -1)}
                     className="size-8 rounded-md hover:bg-card text-foreground"
                     aria-label="Disminuir cantidad"
                   >
@@ -326,7 +345,7 @@ export function PosTerminal({ recipes, tables, customers = [] }: PosTerminalProp
                   <Button
                     size="icon-xs"
                     variant="ghost"
-                    onClick={() => updateQuantity(item.recipe_id, 1)}
+                    onClick={() => updateQuantity(item.id, 1)}
                     className="size-8 rounded-md hover:bg-card text-foreground"
                     aria-label="Aumentar cantidad"
                   >
@@ -334,17 +353,69 @@ export function PosTerminal({ recipes, tables, customers = [] }: PosTerminalProp
                   </Button>
                 </div>
 
-                <span className="text-[11px] font-mono text-muted-foreground">
+                <div className="flex items-center gap-1.5">
+                  {/* Botón para separar 1 unidad si hay varias */}
+                  {item.quantity > 1 && (
+                    <Button
+                      type="button"
+                      size="xs"
+                      variant="outline"
+                      onClick={() => handleSplitItem(item.id)}
+                      className="h-7 px-2 text-[11px] font-semibold text-primary hover:bg-primary/10 border-primary/30 gap-1 rounded-lg"
+                      title="Separa 1 unidad en otra fila para personalizarla por separado"
+                    >
+                      <Scissors className="size-3" />
+                      <span>Separar 1</span>
+                    </Button>
+                  )}
+
+                  {/* Botón para personalizar / quitar ingredientes */}
+                  <Button
+                    type="button"
+                    size="xs"
+                    variant={item.notes ? 'default' : 'outline'}
+                    onClick={() => setCustomizingItem(item)}
+                    className={`h-7 px-2 text-[11px] font-semibold gap-1 rounded-lg transition-colors ${
+                      item.notes
+                        ? 'bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-2xs'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                    title="Personalizar o quitar ingredientes de este plato"
+                  >
+                    <SlidersHorizontal className="size-3" />
+                    <span>{item.notes ? 'Modificado' : 'Personalizar'}</span>
+                  </Button>
+                </div>
+
+                <span className="text-[11px] font-mono text-muted-foreground shrink-0">
                   ${item.unit_price.toFixed(2)} c/u
                 </span>
               </div>
+
+              {/* Etiqueta de notas culinarias si existen */}
+              {item.notes && (
+                <div className="flex items-center justify-between p-2 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-900 dark:text-amber-200 text-xs font-semibold">
+                  <span className="flex items-center gap-1.5 truncate">
+                    <span>⚠️</span>
+                    <span className="truncate">{item.notes}</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => updateNotes(item.id, '')}
+                    className="text-[11px] text-muted-foreground hover:text-destructive shrink-0 ml-2"
+                    title="Restablecer a estándar"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
 
               {/* Culinary Notes Field & Quick Tags */}
               <div className="space-y-1.5 pt-1">
                 <Input
                   placeholder="Nota de cocina (ej: Sin cebolla, extra salsa)..."
                   value={item.notes}
-                  onChange={(e) => updateNotes(item.recipe_id, e.target.value)}
+                  onChange={(e) => updateNotes(item.id, e.target.value)}
                   className="h-9 text-base sm:text-xs bg-muted/20"
                 />
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
@@ -352,7 +423,7 @@ export function PosTerminal({ recipes, tables, customers = [] }: PosTerminalProp
                     <button
                       key={qn}
                       type="button"
-                      onClick={() => appendQuickNote(item.recipe_id, qn)}
+                      onClick={() => appendQuickNote(item, qn)}
                       className="text-[11px] px-2.5 py-1 rounded-full bg-muted/70 text-foreground hover:bg-muted font-medium shrink-0 transition-all active:scale-95 border shadow-2xs"
                     >
                       + {qn}
@@ -785,6 +856,17 @@ export function PosTerminal({ recipes, tables, customers = [] }: PosTerminalProp
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Diálogo de Personalización / Quitar Ingredientes */}
+      <CustomizeItemDialog
+        open={!!customizingItem}
+        onOpenChange={(open) => {
+          if (!open) setCustomizingItem(null)
+        }}
+        item={customizingItem}
+        ingredients={customizingItem ? (recipeIngredientsMap[customizingItem.recipe_id] || []) : []}
+        onSaveCustomization={handleSaveCustomization}
+      />
     </div>
   )
 }
