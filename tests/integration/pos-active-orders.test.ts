@@ -92,7 +92,7 @@ describe('Integration: Flujo de Pedidos Activos y Cobro Posterior', () => {
 
     // 2. Cobrar orden
     const payRes = await payActiveOrderAction({
-      orderId: res.orderId,
+      orderId: res.orderId!,
       paymentMethodName: 'Zelle',
       paymentMethodId: 'pm-zelle',
       total: 14.0,
@@ -122,7 +122,7 @@ describe('Integration: Flujo de Pedidos Activos y Cobro Posterior', () => {
       payment_method_name: 'Efectivo USD',
     })
 
-    await updateOrderStatusAction(res.orderId, {
+    await updateOrderStatusAction(res.orderId!, {
       kitchen_status: 'ready',
     })
 
