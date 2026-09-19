@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { sanitizeText, validateUUID } from '@/lib/security'
+import { sanitizeText } from '@/lib/security'
 
 export interface CartItemInput {
   recipe_id: string
@@ -28,10 +28,6 @@ export interface CreateOrderParams {
   is_credit?: boolean
   reference_number?: string
 }
-
-export type ProcessOrderResult =
-  | { success: true; orderId: string; error?: never }
-  | { success: false; error: string; orderId?: never }
 
 /**
  * Acción unificada para procesar o crear una orden desde el POS (con soporte para crédito y selección de cliente)
@@ -62,7 +58,7 @@ export async function processOrderAction(data: {
   }>
   discount?: number
   taxRate?: number
-}): Promise<ProcessOrderResult> {
+}) {
   const supabase = await createClient()
 
   if (data.items.length === 0) {
@@ -70,6 +66,7 @@ export async function processOrderAction(data: {
   }
 
   const sanitizedCustomerName = sanitizeText(data.customer_name)
+  const sanitizedNotes = sanitizeText(data.notes)
   const isCredit = data.is_credit === true || data.payment_method_name === 'Crédito'
   const isPaid = !isCredit && data.is_paid !== false
   const orderStatus = isPaid || isCredit ? 'completed' : 'active'
@@ -79,52 +76,32 @@ export async function processOrderAction(data: {
   const calculatedSubtotal = data.subtotal ?? data.items.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0)
   const calculatedTotal = data.total ?? calculatedSubtotal
 
-  // Formatear notas y teléfono de contacto
-  let orderNotes = sanitizeText(data.notes)
-  if (data.customer_phone && data.customer_phone.trim()) {
-    const phoneTag = `Tel: ${data.customer_phone.trim()}`
-    if (!orderNotes.includes(phoneTag)) {
-      orderNotes = orderNotes ? `${orderNotes} | ${phoneTag}` : phoneTag
-    }
-  }
-
-  const validTableId = data.table_id && validateUUID(data.table_id) ? data.table_id : null
-  const validCustomerId = data.customer_id && validateUUID(data.customer_id) ? data.customer_id : null
-
-  // 1. Crear orden (utilizando exclusivamente columnas existentes en orders)
+  // 1. Crear orden
   const { data: order, error: orderErr } = await supabase
     .from('orders')
     .insert({
       type: data.type || 'dine_in',
-      table_id: validTableId,
-      user_id: validCustomerId,
-      customer_name: sanitizedCustomerName || (validTableId ? 'Mesa Salón' : 'Cliente Mostrador'),
+      table_id: data.table_id || null,
+      customer_id: data.customer_id || null,
+      customer_name: sanitizedCustomerName || (data.table_id ? 'Mesa Salón' : 'Cliente Mostrador'),
+      customer_phone: sanitizeText(data.customer_phone) || null,
       status: orderStatus,
       payment_status: paymentStatus,
       kitchen_status: kitchenStatus,
       subtotal: calculatedSubtotal,
       total: calculatedTotal,
-      notes: orderNotes || (isCredit ? 'Venta a Crédito / Cuenta Corriente' : null),
+      notes: sanitizedNotes || (isCredit ? 'Venta a Crédito / Cuenta Corriente' : null),
     })
     .select('id')
     .single()
 
   if (orderErr || !order) {
-    console.error('Error al insertar orden:', orderErr)
-    throw new Error(`Error al crear la orden: ${orderErr?.message || 'Error de base de datos'}`)
+    throw new Error(`Error al crear la orden: ${orderErr?.message}`)
   }
 
   const orderId = order.id
 
-  // 2. Si es para salón y tiene mesa asignada, marcar mesa como ocupada
-  if (validTableId && data.type === 'dine_in') {
-    await supabase
-      .from('restaurant_tables')
-      .update({ status: 'occupied' })
-      .eq('id', validTableId)
-  }
-
-  // 3. Insertar items de la orden
+  // 2. Insertar items de la orden
   const itemRows = data.items.map((item) => ({
     order_id: orderId,
     recipe_id: item.recipe_id,
@@ -138,12 +115,11 @@ export async function processOrderAction(data: {
   const { error: itemsErr } = await supabase.from('order_items').insert(itemRows)
   if (itemsErr) {
     console.error('Error al insertar items de la orden:', itemsErr.message)
-    throw new Error(`Error al registrar productos: ${itemsErr.message}`)
   }
 
-  // 4. Registrar pago o registro de crédito si está cobrada
+  // 3. Registrar pago o registro de crédito
   let methodId = data.payment_method_id
-  if (!methodId && (isPaid || isCredit)) {
+  if (!methodId) {
     const { data: m } = await supabase
       .from('payment_methods')
       .select('id')
@@ -164,18 +140,18 @@ export async function processOrderAction(data: {
 
     await supabase.from('order_payments').insert({
       order_id: orderId,
-      payment_method_id: methodId || '00000000-0000-0000-0000-000000000000',
+      payment_method_id: methodId,
       amount: calculatedTotal,
       reference_number: refNumber,
     })
   }
 
-  // 5. Si es venta a crédito y hay cliente registrado, incrementar su deuda en profiles
-  if (isCredit && validCustomerId) {
+  // 4. Si es venta a crédito y hay cliente registrado, incrementar su deuda en profiles
+  if (isCredit && data.customer_id) {
     const { data: cust } = await supabase
       .from('profiles')
       .select('id, current_debt, total_spent, total_orders_count')
-      .eq('id', validCustomerId)
+      .eq('id', data.customer_id)
       .single()
 
     if (cust) {
@@ -190,12 +166,13 @@ export async function processOrderAction(data: {
           total_spent: totalSpent + calculatedTotal,
           total_orders_count: ordersCount + 1,
         })
-        .eq('id', validCustomerId)
+        .eq('id', data.customer_id)
     }
   }
 
-  // 6. Descontar stock de inventario automáticamente según los escandallos
+  // 5. Descontar stock de inventario automáticamente según los escandallos
   for (const item of data.items) {
+    // Obtener ingredientes directos de la receta
     const { data: recIngs } = await supabase
       .from('recipe_ingredients')
       .select('ingredient_id, quantity')
@@ -218,18 +195,14 @@ export async function processOrderAction(data: {
             .update({ current_stock: newStock })
             .eq('id', ing.ingredient_id)
 
-          // Registrar movimiento de salida para trazabilidad de forma segura
-          try {
-            await supabase.from('inventory_movements').insert({
-              ingredient_id: ing.ingredient_id,
-              type: 'sale_deduction',
-              quantity: -qtyToDeduct,
-              unit_cost: currentIng.cost_per_unit,
-              reason: `Venta POS Comanda #${orderId.slice(0, 8)}`,
-            })
-          } catch {
-            // No interrumpir si la tabla inventory_movements tiene restricciones previas
-          }
+          // Registrar movimiento de salida
+          await supabase.from('inventory_movements').insert({
+            ingredient_id: ing.ingredient_id,
+            type: 'sale_deduction',
+            quantity: -qtyToDeduct,
+            unit_cost: currentIng.cost_per_unit,
+            reason: `Venta POS Comanda #${orderId.slice(0, 8)}`,
+          })
         }
       }
     }
@@ -340,43 +313,27 @@ export async function payActiveOrderAction(params: {
     console.warn('Advertencia al registrar pago:', payErr.message)
   }
 
-  const validCustomerId = params.customerId && validateUUID(params.customerId) ? params.customerId : null
-  const updatePayload = {
-    payment_status: isCredit ? 'credit' : 'paid',
-    status: 'completed',
-    updated_at: new Date().toISOString(),
-    ...(validCustomerId ? { user_id: validCustomerId } : {}),
-  }
-
+  // Actualizar orden a pagada o crédito y completada
   const { error: ordErr } = await supabase
     .from('orders')
-    .update(updatePayload)
+    .update({
+      payment_status: isCredit ? 'credit' : 'paid',
+      status: 'completed',
+      customer_id: params.customerId || undefined,
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', params.orderId)
 
   if (ordErr) {
     throw new Error(`Error al marcar orden como cobrada/crédito: ${ordErr.message}`)
   }
 
-  // Liberar mesa si la orden pertenecía a una mesa
-  const { data: ordInfo } = await supabase
-    .from('orders')
-    .select('table_id')
-    .eq('id', params.orderId)
-    .single()
-
-  if (ordInfo?.table_id) {
-    await supabase
-      .from('restaurant_tables')
-      .update({ status: 'available' })
-      .eq('id', ordInfo.table_id)
-  }
-
   // Si se cobra a crédito, incrementar deuda del cliente en profiles
-  if (isCredit && validCustomerId) {
+  if (isCredit && params.customerId) {
     const { data: cust } = await supabase
       .from('profiles')
       .select('id, current_debt, total_spent, total_orders_count')
-      .eq('id', validCustomerId)
+      .eq('id', params.customerId)
       .single()
 
     if (cust) {
@@ -391,7 +348,7 @@ export async function payActiveOrderAction(params: {
           total_spent: totalSpent + params.total,
           total_orders_count: ordersCount + 1,
         })
-        .eq('id', validCustomerId)
+        .eq('id', params.customerId)
     }
   }
 
@@ -410,12 +367,6 @@ export async function payActiveOrderAction(params: {
 export async function cancelOrderAction(orderId: string) {
   const supabase = await createClient()
 
-  const { data: ord } = await supabase
-    .from('orders')
-    .select('table_id')
-    .eq('id', orderId)
-    .single()
-
   const { error } = await supabase
     .from('orders')
     .update({
@@ -427,14 +378,6 @@ export async function cancelOrderAction(orderId: string) {
 
   if (error) {
     throw new Error(`Error al cancelar orden: ${error.message}`)
-  }
-
-  // Si tenía mesa asignada, liberarla
-  if (ord?.table_id) {
-    await supabase
-      .from('restaurant_tables')
-      .update({ status: 'available' })
-      .eq('id', ord.table_id)
   }
 
   revalidatePath('/pos')

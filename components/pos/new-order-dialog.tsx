@@ -1,10 +1,12 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
+  DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
@@ -91,7 +93,6 @@ export function NewOrderDialog({
   const [customizingItem, setCustomizingItem] = useState<CartItem | null>(null)
   const [bcvRate, setBcvRate] = useState(813.74)
   const [loading, setLoading] = useState(false)
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
@@ -102,13 +103,6 @@ export function NewOrderDialog({
       })
       .catch(() => {})
   }, [open])
-
-  // Reset scroll to top whenever changing steps or reopening modal
-  useEffect(() => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'instant' })
-    }
-  }, [step, open])
 
   const finalRecipes = recipes.filter((r) => r.type === 'final_product')
   const categories = Array.from(new Set(finalRecipes.map((r) => r.category || 'General')))
@@ -148,24 +142,6 @@ export function NewOrderDialog({
 
   function handleSaveCustomization(itemId: string, notes: string, applyMode: 'single' | 'all') {
     setCart((prev) => customizeCartItem(prev, itemId, notes, applyMode) as CartItem[])
-  }
-
-  function handleGoToAssign() {
-    setStep('assign')
-    setTimeout(() => {
-      if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollTo({ top: 0, behavior: 'instant' })
-      }
-    }, 10)
-  }
-
-  function handleBackToCatalog() {
-    setStep('catalog')
-    setTimeout(() => {
-      if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollTo({ top: 0, behavior: 'instant' })
-      }
-    }, 10)
   }
 
   const totalItemsCount = cart.reduce((acc, curr) => acc + curr.quantity, 0)
@@ -210,7 +186,7 @@ export function NewOrderDialog({
         deliveryAddress.trim() ? `Dirección: ${deliveryAddress.trim()}` : null
       ].filter(Boolean).join(' | ')
 
-      const res = await processOrderAction({
+      await processOrderAction({
         table_id: orderType === 'dine_in' ? selectedTable || null : null,
         type: orderType,
         items: cart,
@@ -226,17 +202,11 @@ export function NewOrderDialog({
         reference_number: null,
       })
 
-      if (res && !res.success) {
-        alert(res.error || 'Error al generar la comanda')
-        return
-      }
-
       resetForm()
       setOpen(false)
       if (onSuccess) onSuccess()
-    } catch (err: any) {
-      console.error('Error al generar comanda:', err)
-      alert(err?.message || 'Error al generar la comanda. Por favor verifica los datos.')
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Error al generar la comanda')
     } finally {
       setLoading(false)
     }
@@ -258,17 +228,17 @@ export function NewOrderDialog({
         }
       />
 
-      <DialogContent className="w-[96vw] max-w-5xl h-[86vh] max-h-[760px] flex flex-col p-0 gap-0 rounded-2xl overflow-hidden shadow-2xl border bg-background text-foreground">
+      <DialogContent className="sm:max-w-5xl h-[90vh] max-h-[92vh] flex flex-col p-5 sm:p-6 rounded-2xl overflow-hidden">
         
         {/* ========================================================= */}
         {/* PASO 1: SELECCIÓN DE TIPO DE PEDIDO Y CATÁLOGO DE PLATOS */}
         {/* ========================================================= */}
         {step === 'catalog' ? (
           <>
-            <div className="shrink-0 px-4 sm:px-6 py-3 border-b bg-card space-y-2">
+            <DialogHeader className="pb-3 border-b shrink-0 space-y-2">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <DialogTitle className="text-base sm:text-lg font-extrabold flex items-center gap-2 text-foreground">
+                  <DialogTitle className="text-lg font-extrabold flex items-center gap-2 text-foreground">
                     <UtensilsCrossed className="size-5 text-primary" />
                     <span>Nuevo Pedido / Comanda</span>
                   </DialogTitle>
@@ -311,10 +281,10 @@ export function NewOrderDialog({
                   </ButtonGroupItem>
                 </ButtonGroup>
               </div>
-            </div>
+            </DialogHeader>
 
             {/* Contenido Principal con 2 Columnas Independientes */}
-            <div className="flex-1 min-h-0 p-4 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 overflow-hidden">
+            <div className="flex-1 min-h-0 py-2 grid grid-cols-1 lg:grid-cols-12 gap-5 overflow-y-auto lg:overflow-hidden">
               
               {/* Columna Izquierda: Catálogo de Platos (7 cols) */}
               <div className="lg:col-span-7 flex flex-col h-full min-h-0 space-y-2.5">
@@ -413,7 +383,7 @@ export function NewOrderDialog({
               </div>
 
               {/* Columna Derecha: Comanda / Platos Agregados (5 cols) */}
-              <div className="lg:col-span-5 flex flex-col h-full min-h-0 bg-card rounded-2xl border p-3.5 shadow-xs">
+              <div className="lg:col-span-5 flex flex-col h-full min-h-0 bg-card rounded-2xl border p-4 shadow-xs">
                 {/* Header de la Comanda (shrink-0) */}
                 <div className="flex items-center justify-between pb-2 border-b shrink-0">
                   <span className="font-bold text-xs text-foreground">
@@ -432,7 +402,7 @@ export function NewOrderDialog({
 
                 {/* Lista de Platos con Scroll Dedicado en Todo el Alto */}
                 {cart.length === 0 ? (
-                  <div className="flex-1 flex flex-col items-center justify-center py-6 text-center text-muted-foreground text-xs space-y-2">
+                  <div className="flex-1 flex flex-col items-center justify-center py-8 text-center text-muted-foreground text-xs space-y-2">
                     <ShoppingBag className="size-8 text-muted-foreground/30" />
                     <p className="font-semibold text-foreground">Comanda vacía</p>
                     <p className="text-[11px] text-muted-foreground">
@@ -553,7 +523,7 @@ export function NewOrderDialog({
             {/* ========================================================= */}
             {/* PIE DE PÁGINA PERMANENTE Y FUERA DEL SCROLL (PASO 1)     */}
             {/* ========================================================= */}
-            <div className="shrink-0 px-4 sm:px-6 py-3 border-t bg-card/95 backdrop-blur-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+            <DialogFooter className="shrink-0 pt-3 border-t bg-card/95 backdrop-blur-xs flex flex-col sm:flex-row items-center justify-between gap-3">
               {/* Totales visibles permanentemente a la izquierda */}
               <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
                 <div className="flex items-baseline gap-2">
@@ -581,26 +551,26 @@ export function NewOrderDialog({
                 <Button
                   type="button"
                   disabled={cart.length === 0}
-                  onClick={handleGoToAssign}
-                  className="h-10 px-5 rounded-xl text-xs font-bold gap-2 shadow-xs bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto cursor-pointer"
+                  onClick={() => setStep('assign')}
+                  className="h-10 px-5 rounded-xl text-xs font-bold gap-2 shadow-xs bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto"
                 >
                   <span>Continuar a Asignar Mesa / Datos</span>
                   <ArrowRight className="size-4" />
                 </Button>
               </div>
-            </div>
+            </DialogFooter>
           </>
         ) : (
           /* ========================================================= */
           /* PASO 2: ASIGNACIÓN DE MESA / CLIENTE Y GENERAR COMANDA    */
           /* ========================================================= */
           <>
-            <div className="shrink-0 px-4 sm:px-6 py-3 border-b bg-card space-y-1">
+            <DialogHeader className="pb-3 border-b shrink-0">
               <div className="flex items-center justify-between">
                 <button
                   type="button"
-                  onClick={handleBackToCatalog}
-                  className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 font-bold transition-colors cursor-pointer"
+                  onClick={() => setStep('catalog')}
+                  className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 font-bold transition-colors"
                 >
                   <ArrowLeft className="size-4 text-primary" />
                   <span>Volver a Platos</span>
@@ -616,7 +586,7 @@ export function NewOrderDialog({
                 </div>
               </div>
 
-              <div className="pt-1">
+              <div className="pt-2">
                 <DialogTitle className="text-base sm:text-lg font-extrabold text-foreground">
                   Asignar Mesa y Confirmar Comanda
                 </DialogTitle>
@@ -624,156 +594,152 @@ export function NewOrderDialog({
                   Ingresa la mesa o datos del cliente. La orden se generará y enviará a cocina sin cobro inmediato.
                 </DialogDescription>
               </div>
-            </div>
+            </DialogHeader>
 
-            <div
-              ref={scrollContainerRef}
-              className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4"
-            >
-              <div className="max-w-xl mx-auto w-full space-y-4">
-                {/* Resumen Compacto del Pedido */}
-                <div className="p-3 rounded-xl bg-muted/30 border flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <ChefHat className="size-4 text-primary" />
-                    <span className="font-semibold text-foreground">
-                      {totalItemsCount} {totalItemsCount === 1 ? 'plato en la orden' : 'platos en la orden'}
-                    </span>
-                  </div>
-                  <span className="font-mono font-black text-sm text-foreground">
-                    Total: ${total.toFixed(2)}
+            <div className="flex-1 min-h-0 overflow-y-auto py-3 max-w-xl mx-auto w-full space-y-4">
+              
+              {/* Resumen Compacto del Pedido */}
+              <div className="p-3 rounded-xl bg-muted/30 border flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <ChefHat className="size-4 text-primary" />
+                  <span className="font-semibold text-foreground">
+                    {totalItemsCount} {totalItemsCount === 1 ? 'plato en la orden' : 'platos en la orden'}
                   </span>
                 </div>
+                <span className="font-mono font-black text-sm text-foreground">
+                  Total: ${total.toFixed(2)}
+                </span>
+              </div>
 
-                {/* Si es Salón: Selector Visual de Mesas */}
-                {orderType === 'dine_in' && (
-                  <div className="p-3.5 rounded-2xl border bg-card space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                        <span>Mesa asignada:</span>
-                        <span className="text-destructive font-black">*</span>
-                      </label>
-                      {selectedTable && (
-                        <span className="text-xs font-bold text-primary">
-                          Mesa {tables.find((t) => t.id === selectedTable)?.number} Seleccionada
-                        </span>
-                      )}
-                    </div>
+              {/* Si es Salón: Selector Visual de Mesas */}
+              {orderType === 'dine_in' && (
+                <div className="p-3.5 rounded-2xl border bg-card space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <span>Mesa asignada:</span>
+                      <span className="text-destructive font-black">*</span>
+                    </label>
+                    {selectedTable && (
+                      <span className="text-xs font-bold text-primary">
+                        Mesa {tables.find((t) => t.id === selectedTable)?.number} Seleccionada
+                      </span>
+                    )}
+                  </div>
 
-                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                      {tables.map((tbl) => {
-                        const isOccupied = tbl.status === 'occupied'
-                        const isSelected = selectedTable === tbl.id
-                        return (
-                          <button
-                            key={tbl.id}
-                            type="button"
-                            onClick={() => setSelectedTable(tbl.id)}
-                            className={`p-2.5 rounded-xl text-xs font-bold border transition-all text-center flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                    {tables.map((tbl) => {
+                      const isOccupied = tbl.status === 'occupied'
+                      const isSelected = selectedTable === tbl.id
+                      return (
+                        <button
+                          key={tbl.id}
+                          type="button"
+                          onClick={() => setSelectedTable(tbl.id)}
+                          className={`p-2.5 rounded-xl text-xs font-bold border transition-all text-center flex flex-col items-center justify-center gap-1 ${
+                            isSelected
+                              ? 'border-primary bg-primary text-primary-foreground shadow-xs ring-2 ring-primary/40'
+                              : isOccupied
+                              ? 'border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-300 hover:bg-amber-500/20'
+                              : 'border-input bg-card text-foreground hover:border-primary/40'
+                          }`}
+                        >
+                          <span className="leading-tight">Mesa {tbl.number}</span>
+                          <span
+                            className={`text-[9px] px-1.5 py-0.2 rounded-full font-normal ${
                               isSelected
-                                ? 'border-primary bg-primary text-primary-foreground shadow-xs ring-2 ring-primary/40'
+                                ? 'bg-primary-foreground/20 text-primary-foreground'
                                 : isOccupied
-                                ? 'border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-300 hover:bg-amber-500/20'
-                                : 'border-input bg-card text-foreground hover:border-primary/40'
+                                ? 'bg-amber-500/20 text-amber-800 dark:text-amber-200'
+                                : 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
                             }`}
                           >
-                            <span className="leading-tight">Mesa {tbl.number}</span>
-                            <span
-                              className={`text-[9px] px-1.5 py-0.2 rounded-full font-normal ${
-                                isSelected
-                                  ? 'bg-primary-foreground/20 text-primary-foreground'
-                                  : isOccupied
-                                  ? 'bg-amber-500/20 text-amber-800 dark:text-amber-200'
-                                  : 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
-                              }`}
-                            >
-                              {isOccupied ? 'Ocupada' : 'Libre'}
-                            </span>
-                          </button>
-                        )
-                      })}
-                    </div>
+                            {isOccupied ? 'Ocupada' : 'Libre'}
+                          </span>
+                        </button>
+                      )
+                    })}
                   </div>
-                )}
-
-                {/* Selector de Cliente Registrado o Manual */}
-                <div className="p-3.5 rounded-2xl border bg-card space-y-2">
-                  <label className="text-xs font-bold text-foreground block">
-                    {orderType === 'dine_in' ? 'Cliente (Opcional):' : 'Datos del Cliente:'}
-                  </label>
-                  <CustomerSelector
-                    customers={customers}
-                    selectedCustomerId={selectedCustomerId}
-                    onSelectCustomer={(cust) => {
-                      setSelectedCustomerId(cust?.id || null)
-                      setCustomerName(cust?.full_name || '')
-                      setCustomerPhone(cust?.phone || '')
-                    }}
-                    customName={customerName}
-                    onChangeCustomName={setCustomerName}
-                    totalAmount={total}
-                  />
                 </div>
+              )}
 
-                {/* Teléfono y Dirección si aplica para Llevar o Delivery */}
-                {(orderType === 'takeaway' || orderType === 'delivery') && (
-                  <div className="p-3.5 rounded-2xl border bg-card space-y-2.5 text-xs">
+              {/* Selector de Cliente Registrado o Manual */}
+              <div className="p-3.5 rounded-2xl border bg-card space-y-2">
+                <label className="text-xs font-bold text-foreground block">
+                  {orderType === 'dine_in' ? 'Cliente (Opcional):' : 'Datos del Cliente:'}
+                </label>
+                <CustomerSelector
+                  customers={customers}
+                  selectedCustomerId={selectedCustomerId}
+                  onSelectCustomer={(cust) => {
+                    setSelectedCustomerId(cust?.id || null)
+                    setCustomerName(cust?.full_name || '')
+                    setCustomerPhone(cust?.phone || '')
+                  }}
+                  customName={customerName}
+                  onChangeCustomName={setCustomerName}
+                  totalAmount={total}
+                />
+              </div>
+
+              {/* Teléfono y Dirección si aplica para Llevar o Delivery */}
+              {(orderType === 'takeaway' || orderType === 'delivery') && (
+                <div className="p-3.5 rounded-2xl border bg-card space-y-2.5 text-xs">
+                  <div className="space-y-1">
+                    <label className="font-bold text-muted-foreground flex items-center gap-1">
+                      <Phone className="size-3 text-primary" />
+                      <span>Teléfono de contacto:</span>
+                    </label>
+                    <Input
+                      placeholder="Ej. +58 412 1234567..."
+                      value={customerPhone}
+                      onChange={(e) => setCustomerPhone(e.target.value)}
+                      className="h-8 text-xs bg-muted/20"
+                    />
+                  </div>
+
+                  {orderType === 'delivery' && (
                     <div className="space-y-1">
                       <label className="font-bold text-muted-foreground flex items-center gap-1">
-                        <Phone className="size-3 text-primary" />
-                        <span>Teléfono de contacto:</span>
+                        <MapPin className="size-3 text-primary" />
+                        <span>Dirección de Entrega:</span>
+                        <span className="text-destructive font-black">*</span>
                       </label>
                       <Input
-                        placeholder="Ej. +58 412 1234567..."
-                        value={customerPhone}
-                        onChange={(e) => setCustomerPhone(e.target.value)}
+                        placeholder="Ej. Av. Principal, Edif. Los Olivos, Apto 4-B..."
+                        value={deliveryAddress}
+                        onChange={(e) => setDeliveryAddress(e.target.value)}
                         className="h-8 text-xs bg-muted/20"
                       />
                     </div>
-
-                    {orderType === 'delivery' && (
-                      <div className="space-y-1">
-                        <label className="font-bold text-muted-foreground flex items-center gap-1">
-                          <MapPin className="size-3 text-primary" />
-                          <span>Dirección de Entrega:</span>
-                          <span className="text-destructive font-black">*</span>
-                        </label>
-                        <Input
-                          placeholder="Ej. Av. Principal, Edif. Los Olivos, Apto 4-B..."
-                          value={deliveryAddress}
-                          onChange={(e) => setDeliveryAddress(e.target.value)}
-                          className="h-8 text-xs bg-muted/20"
-                        />
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Nota General de Cocina / Comanda */}
-                <div className="p-3.5 rounded-2xl border bg-card space-y-1 text-xs">
-                  <label className="font-bold text-muted-foreground">
-                    Instrucción especial para cocina (Opcional):
-                  </label>
-                  <Input
-                    placeholder="Ej. Servir todo junto, comensal alérgico al marisco, término general..."
-                    value={orderNotes}
-                    onChange={(e) => setOrderNotes(e.target.value)}
-                    className="h-8 text-xs bg-muted/20"
-                  />
+                  )}
                 </div>
+              )}
+
+              {/* Nota General de Cocina / Comanda */}
+              <div className="p-3.5 rounded-2xl border bg-card space-y-1 text-xs">
+                <label className="font-bold text-muted-foreground">
+                  Instrucción especial para cocina (Opcional):
+                </label>
+                <Input
+                  placeholder="Ej. Servir todo junto, comensal alérgico al marisco, término general..."
+                  value={orderNotes}
+                  onChange={(e) => setOrderNotes(e.target.value)}
+                  className="h-8 text-xs bg-muted/20"
+                />
               </div>
             </div>
 
             {/* ========================================================= */}
             {/* PIE DE PÁGINA PERMANENTE Y FUERA DEL SCROLL (PASO 2)     */}
             {/* ========================================================= */}
-            <div className="shrink-0 px-4 sm:px-6 py-3 border-t bg-card flex flex-col sm:flex-row items-center justify-between gap-3">
+            <DialogFooter className="shrink-0 pt-3 border-t bg-card flex flex-col sm:flex-row items-center justify-between gap-3">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={handleBackToCatalog}
+                onClick={() => setStep('catalog')}
                 disabled={loading}
-                className="h-10 rounded-xl text-xs font-semibold gap-1.5 w-full sm:w-auto cursor-pointer"
+                className="h-10 rounded-xl text-xs font-semibold gap-1.5 w-full sm:w-auto"
               >
                 <ArrowLeft className="size-3.5" />
                 <span>Volver a Platos</span>
@@ -790,7 +756,7 @@ export function NewOrderDialog({
                   type="button"
                   onClick={handleGenerateOrder}
                   disabled={loading || (orderType === 'dine_in' && !selectedTable)}
-                  className="h-10 px-6 rounded-xl text-xs font-bold gap-2 shadow-xs bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto cursor-pointer"
+                  className="h-10 px-6 rounded-xl text-xs font-bold gap-2 shadow-xs bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto"
                 >
                   {loading ? (
                     <>
@@ -805,7 +771,7 @@ export function NewOrderDialog({
                   )}
                 </Button>
               </div>
-            </div>
+            </DialogFooter>
           </>
         )}
       </DialogContent>

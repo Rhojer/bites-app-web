@@ -249,11 +249,6 @@ export function PosTerminal({
         reference_number: defaultRef,
       })
 
-      if (!res.success) {
-        alert(res.error || 'Error al procesar comanda')
-        return
-      }
-
       setSuccessOrderNumber(res.orderId.slice(0, 8))
       setCart([])
       setSelectedCustomerId(null)
