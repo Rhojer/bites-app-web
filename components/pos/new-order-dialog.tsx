@@ -228,7 +228,7 @@ export function NewOrderDialog({
         }
       />
 
-      <DialogContent className="sm:max-w-5xl max-h-[92vh] flex flex-col p-5 sm:p-6 rounded-2xl">
+      <DialogContent className="sm:max-w-5xl h-[90vh] max-h-[92vh] flex flex-col p-5 sm:p-6 rounded-2xl overflow-hidden">
         
         {/* ========================================================= */}
         {/* PASO 1: SELECCIÓN DE TIPO DE PEDIDO Y CATÁLOGO DE PLATOS */}
@@ -283,13 +283,13 @@ export function NewOrderDialog({
               </div>
             </DialogHeader>
 
-            {/* Contenido Principal con 2 Columnas */}
-            <div className="flex-1 overflow-y-auto py-2 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+            {/* Contenido Principal con 2 Columnas Independientes */}
+            <div className="flex-1 min-h-0 py-2 grid grid-cols-1 lg:grid-cols-12 gap-5 overflow-y-auto lg:overflow-hidden">
               
-              {/* Columna Izquierda: Catálogo de Platos con Scroll Propio (7 cols) */}
-              <div className="lg:col-span-7 space-y-3">
-                {/* Barra de Búsqueda y Categorías */}
-                <div className="space-y-2">
+              {/* Columna Izquierda: Catálogo de Platos (7 cols) */}
+              <div className="lg:col-span-7 flex flex-col h-full min-h-0 space-y-2.5">
+                {/* Barra de Búsqueda y Categorías (shrink-0) */}
+                <div className="space-y-2 shrink-0">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-bold text-foreground">Platos del Menú:</span>
                     <div className="relative w-48 sm:w-56">
@@ -333,8 +333,8 @@ export function NewOrderDialog({
                   </div>
                 </div>
 
-                {/* Grid Amplio de Platos con Scroll Independiente */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[calc(82vh-220px)] overflow-y-auto pr-1">
+                {/* Grid de Platos con su Propio Scroll Vertical */}
+                <div className="flex-1 min-h-0 overflow-y-auto pr-1 grid grid-cols-1 sm:grid-cols-2 gap-2.5 content-start">
                   {filteredRecipes.map((dish) => {
                     const inCart = cart.find((i) => i.recipe_id === dish.id)
                     const priceBs = convertUsdToBs(dish.price, bcvRate)
@@ -382,168 +382,183 @@ export function NewOrderDialog({
                 </div>
               </div>
 
-              {/* Columna Derecha: Comanda / Platos Agregados (Sticky & Scroll Propio) (5 cols) */}
-              <div className="lg:col-span-5 lg:sticky lg:top-0 h-fit max-h-[calc(82vh-140px)] bg-card rounded-2xl border p-4 flex flex-col justify-between space-y-3 shadow-xs">
-                <div>
-                  <div className="flex items-center justify-between pb-2 border-b">
-                    <span className="font-bold text-xs text-foreground">
-                      Platos Agregados ({totalItemsCount})
-                    </span>
-                    {cart.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setCart([])}
-                        className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-1 transition-colors"
-                      >
-                        <Trash2 className="size-3" /> Limpiar
-                      </button>
-                    )}
-                  </div>
-
-                  {cart.length === 0 ? (
-                    <div className="py-12 text-center text-muted-foreground text-xs space-y-2">
-                      <ShoppingBag className="size-8 mx-auto text-muted-foreground/30" />
-                      <p className="font-semibold text-foreground">Comanda vacía</p>
-                      <p className="text-[11px] text-muted-foreground">
-                        Toca los platos a la izquierda para agregarlos al pedido.
-                      </p>
-                    </div>
-                  ) : (
-                    /* Lista de Platos con Scroll Propio Vertical */
-                    <div className="space-y-2.5 max-h-[calc(82vh-320px)] min-h-[180px] overflow-y-auto pr-1 mt-2">
-                      {cart.map((item) => (
-                        <div key={item.id} className="p-2.5 rounded-xl border bg-muted/20 space-y-2">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <span className="font-bold text-xs text-foreground leading-snug block">{item.name}</span>
-                              {item.quantity > 1 && (
-                                <span className="text-[10px] text-muted-foreground">
-                                  {item.quantity} unidades agrupadas
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-right">
-                              <span className="font-mono font-bold text-xs text-primary block leading-none">
-                                ${(item.quantity * item.unit_price).toFixed(2)}
-                              </span>
-                              <span className="font-mono text-[10px] text-muted-foreground">
-                                {formatBs(convertUsdToBs(item.quantity * item.unit_price, bcvRate))}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-1 bg-card px-1 py-0.5 rounded-md border">
-                              <button
-                                type="button"
-                                onClick={() => updateQuantity(item.id, -1)}
-                                className="size-6 flex items-center justify-center hover:bg-muted rounded"
-                              >
-                                <Minus className="size-3" />
-                              </button>
-                              <span className="w-6 text-center font-mono font-bold text-xs">
-                                {item.quantity}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => updateQuantity(item.id, 1)}
-                                className="size-6 flex items-center justify-center hover:bg-muted rounded"
-                              >
-                                <Plus className="size-3" />
-                              </button>
-                            </div>
-
-                            <div className="flex items-center gap-1">
-                              {/* Botón para separar 1 unidad si hay varias */}
-                              {item.quantity > 1 && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleSplitItem(item.id)}
-                                  className="h-6 px-1.5 rounded-md border border-primary/30 text-primary hover:bg-primary/10 text-[10px] font-semibold flex items-center gap-1"
-                                  title="Separa 1 unidad en otra fila para personalizarla por separado"
-                                >
-                                  <Scissors className="size-2.5" />
-                                  <span>Separar 1</span>
-                                </button>
-                              )}
-
-                              {/* Botón para personalizar / quitar ingredientes */}
-                              <button
-                                type="button"
-                                onClick={() => setCustomizingItem(item)}
-                                className={`h-6 px-1.5 rounded-md border text-[10px] font-semibold flex items-center gap-1 ${
-                                  item.notes
-                                    ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-600 font-bold'
-                                    : 'border-input bg-card text-muted-foreground hover:text-foreground'
-                                }`}
-                                title="Personalizar o quitar ingredientes de este plato"
-                              >
-                                <SlidersHorizontal className="size-2.5" />
-                                <span>{item.notes ? 'Modificado' : 'Personalizar'}</span>
-                              </button>
-                            </div>
-
-                            <span className="text-[10px] font-mono text-muted-foreground">
-                              ${item.unit_price.toFixed(2)} c/u
-                            </span>
-                          </div>
-
-                          {/* Etiqueta de notas culinarias si existen */}
-                          {item.notes && (
-                            <div className="flex items-center justify-between p-1.5 px-2 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-900 dark:text-amber-200 text-[11px] font-semibold">
-                              <span className="flex items-center gap-1 truncate">
-                                <span>⚠️</span>
-                                <span className="truncate">{item.notes}</span>
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => updateItemNotes(item.id, '')}
-                                className="text-[10px] text-muted-foreground hover:text-destructive shrink-0 ml-1.5"
-                                title="Restablecer a estándar"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          )}
-
-                          {/* Notas culinarias del plato */}
-                          <Input
-                            placeholder="Nota de cocina (ej: Sin cebolla)..."
-                            value={item.notes || ''}
-                            onChange={(e) => updateItemNotes(item.id, e.target.value)}
-                            className="h-7 text-[11px] bg-card"
-                          />
-                        </div>
-                      ))}
-                    </div>
+              {/* Columna Derecha: Comanda / Platos Agregados (5 cols) */}
+              <div className="lg:col-span-5 flex flex-col h-full min-h-0 bg-card rounded-2xl border p-4 shadow-xs">
+                {/* Header de la Comanda (shrink-0) */}
+                <div className="flex items-center justify-between pb-2 border-b shrink-0">
+                  <span className="font-bold text-xs text-foreground">
+                    Platos Agregados ({totalItemsCount})
+                  </span>
+                  {cart.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setCart([])}
+                      className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-1 transition-colors"
+                    >
+                      <Trash2 className="size-3" /> Limpiar
+                    </button>
                   )}
                 </div>
 
-                {/* Totales y Botón para Continuar al Paso 2 */}
-                <div className="pt-3 border-t space-y-3 mt-auto">
-                  <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20 space-y-0.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-foreground font-semibold">Total USD:</span>
-                      <span className="font-mono font-black text-xl text-primary">${total.toFixed(2)}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs pt-1 border-t border-primary/20">
-                      <span className="text-muted-foreground">Total Bs (BCV):</span>
-                      <span className="font-mono font-bold text-foreground">{formatBs(totalBs)}</span>
-                    </div>
+                {/* Lista de Platos con Scroll Dedicado en Todo el Alto */}
+                {cart.length === 0 ? (
+                  <div className="flex-1 flex flex-col items-center justify-center py-8 text-center text-muted-foreground text-xs space-y-2">
+                    <ShoppingBag className="size-8 text-muted-foreground/30" />
+                    <p className="font-semibold text-foreground">Comanda vacía</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Toca los platos a la izquierda para agregarlos al pedido.
+                    </p>
                   </div>
+                ) : (
+                  <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-2.5 mt-2">
+                    {cart.map((item) => (
+                      <div key={item.id} className="p-2.5 rounded-xl border bg-muted/20 space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <span className="font-bold text-xs text-foreground leading-snug block">{item.name}</span>
+                            {item.quantity > 1 && (
+                              <span className="text-[10px] text-muted-foreground">
+                                {item.quantity} unidades agrupadas
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <span className="font-mono font-bold text-xs text-primary block leading-none">
+                              ${(item.quantity * item.unit_price).toFixed(2)}
+                            </span>
+                            <span className="font-mono text-[10px] text-muted-foreground">
+                              {formatBs(convertUsdToBs(item.quantity * item.unit_price, bcvRate))}
+                            </span>
+                          </div>
+                        </div>
 
-                  <Button
-                    type="button"
-                    disabled={cart.length === 0}
-                    onClick={() => setStep('assign')}
-                    className="h-11 rounded-xl text-xs font-bold w-full gap-2 shadow-xs bg-primary text-primary-foreground hover:bg-primary/90"
-                  >
-                    <span>Continuar a Asignar Mesa / Datos</span>
-                    <ArrowRight className="size-4" />
-                  </Button>
-                </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1 bg-card px-1 py-0.5 rounded-md border">
+                            <button
+                              type="button"
+                              onClick={() => updateQuantity(item.id, -1)}
+                              className="size-6 flex items-center justify-center hover:bg-muted rounded"
+                            >
+                              <Minus className="size-3" />
+                            </button>
+                            <span className="w-6 text-center font-mono font-bold text-xs">
+                              {item.quantity}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => updateQuantity(item.id, 1)}
+                              className="size-6 flex items-center justify-center hover:bg-muted rounded"
+                            >
+                              <Plus className="size-3" />
+                            </button>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            {/* Botón para separar 1 unidad si hay varias */}
+                            {item.quantity > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleSplitItem(item.id)}
+                                className="h-6 px-1.5 rounded-md border border-primary/30 text-primary hover:bg-primary/10 text-[10px] font-semibold flex items-center gap-1"
+                                title="Separa 1 unidad en otra fila para personalizarla por separado"
+                              >
+                                <Scissors className="size-2.5" />
+                                <span>Separar 1</span>
+                              </button>
+                            )}
+
+                            {/* Botón para personalizar / quitar ingredientes */}
+                            <button
+                              type="button"
+                              onClick={() => setCustomizingItem(item)}
+                              className={`h-6 px-1.5 rounded-md border text-[10px] font-semibold flex items-center gap-1 ${
+                                item.notes
+                                  ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-600 font-bold'
+                                  : 'border-input bg-card text-muted-foreground hover:text-foreground'
+                              }`}
+                              title="Personalizar o quitar ingredientes de este plato"
+                            >
+                              <SlidersHorizontal className="size-2.5" />
+                              <span>{item.notes ? 'Modificado' : 'Personalizar'}</span>
+                            </button>
+                          </div>
+
+                          <span className="text-[10px] font-mono text-muted-foreground">
+                            ${item.unit_price.toFixed(2)} c/u
+                          </span>
+                        </div>
+
+                        {/* Etiqueta de notas culinarias si existen */}
+                        {item.notes && (
+                          <div className="flex items-center justify-between p-1.5 px-2 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-900 dark:text-amber-200 text-[11px] font-semibold">
+                            <span className="flex items-center gap-1 truncate">
+                              <span>⚠️</span>
+                              <span className="truncate">{item.notes}</span>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => updateItemNotes(item.id, '')}
+                              className="text-[10px] text-muted-foreground hover:text-destructive shrink-0 ml-1.5"
+                              title="Restablecer a estándar"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Notas culinarias del plato */}
+                        <Input
+                          placeholder="Nota de cocina (ej: Sin cebolla)..."
+                          value={item.notes || ''}
+                          onChange={(e) => updateItemNotes(item.id, e.target.value)}
+                          className="h-7 text-[11px] bg-card"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* ========================================================= */}
+            {/* PIE DE PÁGINA PERMANENTE Y FUERA DEL SCROLL (PASO 1)     */}
+            {/* ========================================================= */}
+            <DialogFooter className="shrink-0 pt-3 border-t bg-card/95 backdrop-blur-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+              {/* Totales visibles permanentemente a la izquierda */}
+              <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xs text-muted-foreground font-semibold">Total comanda:</span>
+                  <span className="font-mono font-black text-xl text-primary">${total.toFixed(2)}</span>
+                  <span className="font-mono text-xs text-muted-foreground">({formatBs(totalBs)})</span>
+                </div>
+                <span className="text-xs font-semibold text-muted-foreground">
+                  • {totalItemsCount} {totalItemsCount === 1 ? 'plato' : 'platos'}
+                </span>
+              </div>
+
+              {/* Botones de acción fuera del scroll */}
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setOpen(false)}
+                  className="h-10 rounded-xl text-xs font-semibold px-3"
+                >
+                  Cancelar
+                </Button>
+
+                <Button
+                  type="button"
+                  disabled={cart.length === 0}
+                  onClick={() => setStep('assign')}
+                  className="h-10 px-5 rounded-xl text-xs font-bold gap-2 shadow-xs bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto"
+                >
+                  <span>Continuar a Asignar Mesa / Datos</span>
+                  <ArrowRight className="size-4" />
+                </Button>
+              </div>
+            </DialogFooter>
           </>
         ) : (
           /* ========================================================= */
@@ -581,7 +596,7 @@ export function NewOrderDialog({
               </div>
             </DialogHeader>
 
-            <div className="flex-1 overflow-y-auto py-3 max-w-xl mx-auto w-full space-y-4">
+            <div className="flex-1 min-h-0 overflow-y-auto py-3 max-w-xl mx-auto w-full space-y-4">
               
               {/* Resumen Compacto del Pedido */}
               <div className="p-3 rounded-xl bg-muted/30 border flex items-center justify-between text-xs">
@@ -714,36 +729,48 @@ export function NewOrderDialog({
               </div>
             </div>
 
-            <DialogFooter className="pt-3 border-t shrink-0 flex items-center justify-between gap-2 sm:gap-2">
+            {/* ========================================================= */}
+            {/* PIE DE PÁGINA PERMANENTE Y FUERA DEL SCROLL (PASO 2)     */}
+            {/* ========================================================= */}
+            <DialogFooter className="shrink-0 pt-3 border-t bg-card flex flex-col sm:flex-row items-center justify-between gap-3">
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
                 onClick={() => setStep('catalog')}
                 disabled={loading}
-                className="h-10 rounded-xl text-xs font-semibold gap-1.5"
+                className="h-10 rounded-xl text-xs font-semibold gap-1.5 w-full sm:w-auto"
               >
                 <ArrowLeft className="size-3.5" />
                 <span>Volver a Platos</span>
               </Button>
 
-              <Button
-                type="button"
-                onClick={handleGenerateOrder}
-                disabled={loading || (orderType === 'dine_in' && !selectedTable)}
-                className="h-10 px-5 rounded-xl text-xs font-bold gap-2 shadow-xs bg-primary text-primary-foreground hover:bg-primary/90"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" />
-                    <span>Generando Comanda...</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="size-4" />
-                    <span>Generar Comanda / Guardar Orden</span>
-                  </>
-                )}
-              </Button>
+              <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                <div className="hidden sm:flex items-baseline gap-1.5 font-mono text-xs">
+                  <span className="text-muted-foreground font-medium">Total:</span>
+                  <span className="font-bold text-primary">${total.toFixed(2)}</span>
+                  <span className="text-muted-foreground">({formatBs(totalBs)})</span>
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={handleGenerateOrder}
+                  disabled={loading || (orderType === 'dine_in' && !selectedTable)}
+                  className="h-10 px-6 rounded-xl text-xs font-bold gap-2 shadow-xs bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      <span>Generando Comanda...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="size-4" />
+                      <span>Generar Comanda / Guardar Orden</span>
+                    </>
+                  )}
+                </Button>
+              </div>
             </DialogFooter>
           </>
         )}
