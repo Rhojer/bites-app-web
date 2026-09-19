@@ -327,8 +327,8 @@ export function PayOrderDialog({
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading} className="h-10 rounded-xl">
-            Cancelar
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading} className="h-10 rounded-xl text-xs">
+            Guardar / Mantener por Cobrar
           </Button>
           <Button
             onClick={handleConfirmPayment}
