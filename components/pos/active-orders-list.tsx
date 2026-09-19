@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { updateOrderStatusAction, cancelOrderAction } from '@/app/pos/actions'
 import { PayOrderDialog } from '@/components/pos/pay-order-dialog'
+import { OrderDetailDialog } from '@/components/pos/order-detail-dialog'
 import { CustomerOption } from '@/components/pos/customer-selector'
 
 export interface ActiveOrderItem {
@@ -55,6 +56,7 @@ interface ActiveOrdersListProps {
 export function ActiveOrdersList({ orders, customers = [] }: ActiveOrdersListProps) {
   const [filterStatus, setFilterStatus] = useState<string>('ALL')
   const [payingOrder, setPayingOrder] = useState<ActiveOrder | null>(null)
+  const [inspectingOrder, setInspectingOrder] = useState<ActiveOrder | null>(null)
 
   const activeOrders = orders.filter((o) => o.status !== 'cancelled')
 
@@ -170,8 +172,12 @@ export function ActiveOrdersList({ orders, customers = [] }: ActiveOrdersListPro
                     : 'border-border bg-card'
                 }`}
               >
-                {/* Cabecera Limpia del Ticket */}
-                <div className="p-4 pb-3 border-b bg-muted/25 flex items-start justify-between gap-3">
+                {/* Cabecera Limpia del Ticket (Toca para ver comanda completa) */}
+                <div
+                  onClick={() => setInspectingOrder(ord)}
+                  className="p-4 pb-3 border-b bg-muted/25 flex items-start justify-between gap-3 cursor-pointer hover:bg-muted/40 transition-colors"
+                  title="Toca para ver detalle o cobrar"
+                >
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="font-mono font-bold text-xs text-muted-foreground">
@@ -208,7 +214,11 @@ export function ActiveOrdersList({ orders, customers = [] }: ActiveOrdersListPro
 
                 {/* Lista de Platos Limpia y Espaciosa */}
                 <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
-                  <div className="space-y-2.5">
+                  <div
+                    onClick={() => setInspectingOrder(ord)}
+                    className="space-y-2.5 cursor-pointer hover:opacity-90 transition-opacity"
+                    title="Toca para ver detalle o cobrar"
+                  >
                     {ord.items.map((it, idx) => (
                       <div key={idx} className="flex items-start justify-between text-xs gap-2">
                         <div className="space-y-0.5 min-w-0">
@@ -314,8 +324,15 @@ export function ActiveOrdersList({ orders, customers = [] }: ActiveOrdersListPro
                       )}
                     </div>
 
-                    {/* Botón secundario discreto para anular */}
-                    <div className="flex items-center justify-end text-[11px] pt-0.5">
+                    {/* Botones secundarios: Ver Comanda y Anular */}
+                    <div className="flex items-center justify-between text-[11px] pt-1 border-t border-border/40">
+                      <button
+                        type="button"
+                        onClick={() => setInspectingOrder(ord)}
+                        className="text-primary hover:underline font-semibold flex items-center gap-1 text-xs"
+                      >
+                        <Receipt className="size-3" /> Ver Comanda
+                      </button>
                       <button
                         type="button"
                         onClick={() => handleCancel(ord.id)}
@@ -331,6 +348,17 @@ export function ActiveOrdersList({ orders, customers = [] }: ActiveOrdersListPro
           })}
         </div>
       )}
+
+      {/* Modal de Detalle de Comanda (Ver, Cobrar o Guardar por Cobrar) */}
+      <OrderDetailDialog
+        order={inspectingOrder}
+        open={Boolean(inspectingOrder)}
+        onOpenChange={(open) => !open && setInspectingOrder(null)}
+        onPay={(ord) => {
+          setInspectingOrder(null)
+          setPayingOrder(ord)
+        }}
+      />
 
       {/* Modal de Cobro */}
       <PayOrderDialog

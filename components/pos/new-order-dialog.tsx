@@ -23,16 +23,14 @@ import {
   CheckCircle2,
   Loader2,
   Clock,
-  Sparkles,
-  Banknote,
-  CreditCard,
-  Smartphone,
-  AlertCircle,
-  Coins,
-  ShieldCheck,
-  UserCheck,
   SlidersHorizontal,
-  Scissors
+  Scissors,
+  ArrowRight,
+  ArrowLeft,
+  ChefHat,
+  MapPin,
+  Phone,
+  User
 } from 'lucide-react'
 import { processOrderAction, CartItemInput } from '@/app/pos/actions'
 import { formatBs, convertUsdToBs } from '@/lib/bcv'
@@ -70,9 +68,6 @@ interface CartItem extends CartItemInput {
   category?: string
 }
 
-const QUICK_NOTES = ['Sin cebolla', 'Extra salsa', 'Para llevar', 'Bien cocido', 'Poco picante', 'Sin sal']
-const CASH_DENOMINATIONS = [5, 10, 20, 50, 100]
-
 export function NewOrderDialog({
   recipes,
   tables,
@@ -82,25 +77,20 @@ export function NewOrderDialog({
   onSuccess,
 }: NewOrderDialogProps) {
   const [open, setOpen] = useState(false)
+  const [step, setStep] = useState<'catalog' | 'assign'>('catalog')
   const [orderType, setOrderType] = useState<'dine_in' | 'takeaway' | 'delivery'>('dine_in')
   const [selectedTable, setSelectedTable] = useState<string>('')
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null)
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   const [orderNotes, setOrderNotes] = useState('')
+  const [deliveryAddress, setDeliveryAddress] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('ALL')
   const [searchTerm, setSearchTerm] = useState('')
   const [cart, setCart] = useState<CartItem[]>([])
 
   // Modal de personalización de ingredientes
   const [customizingItem, setCustomizingItem] = useState<CartItem | null>(null)
-
-  // Modal de pago directo
-  const [isPayingNow, setIsPayingNow] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState('Efectivo USD')
-  const [referenceNumber, setReferenceNumber] = useState('')
-  const [refError, setRefError] = useState('')
-  const [cashTendered, setCashTendered] = useState('')
   const [bcvRate, setBcvRate] = useState(813.74)
   const [loading, setLoading] = useState(false)
 
@@ -150,21 +140,6 @@ export function NewOrderDialog({
     setCart((prev) => prev.map((i) => (i.id === itemId ? { ...i, notes } : i)))
   }
 
-  function appendQuickNote(item: CartItem, noteText: string) {
-    if (item.quantity > 1) {
-      setCustomizingItem(item)
-      return
-    }
-    setCart((prev) =>
-      prev.map((i) => {
-        if (i.id !== item.id) return i
-        const existing = (i.notes || '').trim()
-        const newNotes = existing ? `${existing}, ${noteText}` : noteText
-        return { ...i, notes: newNotes }
-      })
-    )
-  }
-
   function handleSaveCustomization(itemId: string, notes: string, applyMode: 'single' | 'all') {
     setCart((prev) => customizeCartItem(prev, itemId, notes, applyMode) as CartItem[])
   }
@@ -173,54 +148,43 @@ export function NewOrderDialog({
   const subtotal = cart.reduce((acc, curr) => acc + curr.quantity * curr.unit_price, 0)
   const total = subtotal
   const totalBs = convertUsdToBs(total, bcvRate)
-  const isCash = paymentMethod === 'Efectivo USD'
-  const isCredit = paymentMethod === 'Crédito'
-
-  const numericTendered = parseFloat(cashTendered) || 0
-  const changeDue = Math.max(0, numericTendered - total)
 
   const selectedCustomer = customers.find((c) => c.id === selectedCustomerId) || null
 
   function resetForm() {
+    setStep('catalog')
     setCart([])
     setSelectedCustomerId(null)
     setCustomerName('')
     setCustomerPhone('')
     setOrderNotes('')
+    setDeliveryAddress('')
     setSelectedTable('')
     setOrderType('dine_in')
-    setIsPayingNow(false)
-    setCashTendered('')
-    setReferenceNumber('')
-    setRefError('')
+    setLoading(false)
   }
 
-  async function handleSaveOrder(payNow: boolean) {
+  async function handleGenerateOrder() {
     if (cart.length === 0) return
 
-    // Validaciones para crédito
-    if (payNow && isCredit) {
-      if (!selectedCustomerId) {
-        setRefError('Para una venta a crédito debes seleccionar un cliente registrado.')
-        return
-      }
-    }
-
-    // Validaciones para pago electrónico
-    if (payNow && !isCash && !isCredit && !referenceNumber.trim()) {
-      setRefError('Ingresa el número de referencia para confirmar el pago.')
+    if (orderType === 'dine_in' && !selectedTable) {
+      alert('Por favor selecciona una mesa para la comanda de salón.')
       return
     }
 
-    setRefError('')
     setLoading(true)
 
     try {
       const defaultName = orderType === 'dine_in' && selectedTable
         ? `Mesa ${tables.find((t) => t.id === selectedTable)?.number || ''}`
         : orderType === 'takeaway'
-        ? 'Para Llevar'
-        : 'Delivery'
+        ? (customerName.trim() || 'Para Llevar')
+        : (customerName.trim() || 'Delivery')
+
+      const finalNotes = [
+        orderNotes.trim(),
+        deliveryAddress.trim() ? `Dirección: ${deliveryAddress.trim()}` : null
+      ].filter(Boolean).join(' | ')
 
       await processOrderAction({
         table_id: orderType === 'dine_in' ? selectedTable || null : null,
@@ -228,21 +192,21 @@ export function NewOrderDialog({
         items: cart,
         subtotal,
         total,
-        payment_method_name: payNow ? paymentMethod : 'Pendiente',
+        payment_method_name: 'Pendiente',
         customer_id: selectedCustomerId || null,
         customer_name: customerName.trim() || selectedCustomer?.full_name || defaultName,
         customer_phone: customerPhone.trim() || selectedCustomer?.phone || undefined,
-        notes: orderNotes.trim() || undefined,
-        is_paid: payNow && !isCredit,
-        is_credit: payNow && isCredit,
-        reference_number: payNow && isCredit ? 'VENTA-A-CREDITO' : payNow && !isCash ? referenceNumber.trim() : 'POS-EFECTIVO',
+        notes: finalNotes || undefined,
+        is_paid: false,
+        is_credit: false,
+        reference_number: null,
       })
 
       resetForm()
       setOpen(false)
       if (onSuccess) onSuccess()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Error al crear la orden')
+      alert(err instanceof Error ? err.message : 'Error al generar la comanda')
     } finally {
       setLoading(false)
     }
@@ -264,81 +228,430 @@ export function NewOrderDialog({
         }
       />
 
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col p-5 sm:p-6 rounded-2xl">
-        <DialogHeader className="pb-3 border-b shrink-0">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-lg font-extrabold flex items-center gap-2 text-foreground">
-              <span>Nuevo Pedido / Comanda</span>
-            </DialogTitle>
-            <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-muted text-foreground border">
-              BCV: Bs. {bcvRate.toFixed(2)}
-            </span>
-          </div>
-          <DialogDescription className="text-xs text-muted-foreground">
-            Abre una comanda seleccionando el tipo de servicio, cliente y platos del menú.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-5xl max-h-[92vh] flex flex-col p-5 sm:p-6 rounded-2xl">
+        
+        {/* ========================================================= */}
+        {/* PASO 1: SELECCIÓN DE TIPO DE PEDIDO Y CATÁLOGO DE PLATOS */}
+        {/* ========================================================= */}
+        {step === 'catalog' ? (
+          <>
+            <DialogHeader className="pb-3 border-b shrink-0 space-y-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <DialogTitle className="text-lg font-extrabold flex items-center gap-2 text-foreground">
+                    <UtensilsCrossed className="size-5 text-primary" />
+                    <span>Nuevo Pedido / Comanda</span>
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                    Selecciona el tipo de servicio y agrega los platos a la orden.
+                  </DialogDescription>
+                </div>
 
-        {/* Contenido Principal con 2 Columnas */}
-        <div className="flex-1 overflow-y-auto py-3 grid grid-cols-1 lg:grid-cols-12 gap-5">
-          
-          {/* Columna Izquierda: Configuración del Pedido y Catálogo de Platos (7 cols) */}
-          <div className="lg:col-span-7 space-y-4">
-            
-            {/* Tipo de Pedido */}
-            <div className="p-3.5 bg-muted/30 rounded-2xl border space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-foreground">Tipo de Pedido:</label>
-                <ButtonGroup className="w-72 grid grid-cols-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-muted text-foreground border">
+                    BCV: Bs. {bcvRate.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Selector de Tipo de Servicio */}
+              <div className="flex items-center justify-between p-2 rounded-xl bg-muted/40 border">
+                <span className="text-xs font-bold text-foreground">Tipo de Pedido:</span>
+                <ButtonGroup className="w-64 sm:w-72 grid grid-cols-3">
                   <ButtonGroupItem
                     active={orderType === 'dine_in'}
                     onClick={() => setOrderType('dine_in')}
-                    className="py-1.5 px-2 text-xs"
+                    className="py-1 px-2 text-xs font-bold"
                   >
                     🍽️ Salón
                   </ButtonGroupItem>
                   <ButtonGroupItem
                     active={orderType === 'takeaway'}
                     onClick={() => setOrderType('takeaway')}
-                    className="py-1.5 px-2 text-xs"
+                    className="py-1 px-2 text-xs font-bold"
                   >
                     🛍️ Llevar
                   </ButtonGroupItem>
                   <ButtonGroupItem
                     active={orderType === 'delivery'}
                     onClick={() => setOrderType('delivery')}
-                    className="py-1.5 px-2 text-xs"
+                    className="py-1 px-2 text-xs font-bold"
                   >
                     🛵 Delivery
                   </ButtonGroupItem>
                 </ButtonGroup>
               </div>
+            </DialogHeader>
 
-              {/* Si es Salón: Selector de Mesas */}
-              {orderType === 'dine_in' && (
-                <div className="space-y-1.5 pt-1 border-t border-border/50">
-                  <label className="text-[11px] font-semibold text-muted-foreground">Mesa asignada:</label>
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
-                    {tables.map((tbl) => (
+            {/* Contenido Principal con 2 Columnas */}
+            <div className="flex-1 overflow-y-auto py-2 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+              
+              {/* Columna Izquierda: Catálogo de Platos con Scroll Propio (7 cols) */}
+              <div className="lg:col-span-7 space-y-3">
+                {/* Barra de Búsqueda y Categorías */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-foreground">Platos del Menú:</span>
+                    <div className="relative w-48 sm:w-56">
+                      <Search className="size-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        placeholder="Buscar plato..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="h-8 pl-8 text-xs bg-muted/20 rounded-lg"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Pills de Categorías */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCategory('ALL')}
+                      className={`text-xs px-3 py-1 rounded-lg font-semibold whitespace-nowrap transition-colors ${
+                        selectedCategory === 'ALL'
+                          ? 'bg-foreground text-background shadow-2xs'
+                          : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+                      }`}
+                    >
+                      Todos ({finalRecipes.length})
+                    </button>
+                    {categories.map((c) => (
                       <button
-                        key={tbl.id}
+                        key={c}
                         type="button"
-                        onClick={() => setSelectedTable(tbl.id)}
-                        className={`p-2 rounded-xl text-xs font-bold border transition-all text-center ${
-                          selectedTable === tbl.id
-                            ? 'border-primary bg-primary text-primary-foreground shadow-xs'
-                            : 'border-input bg-card text-foreground hover:border-primary/40'
+                        onClick={() => setSelectedCategory(c)}
+                        className={`text-xs px-3 py-1 rounded-lg font-semibold whitespace-nowrap transition-colors ${
+                          selectedCategory === c
+                            ? 'bg-foreground text-background shadow-2xs'
+                            : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
                         }`}
                       >
-                        Mesa {tbl.number}
+                        {c}
                       </button>
                     ))}
                   </div>
                 </div>
+
+                {/* Grid Amplio de Platos con Scroll Independiente */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[calc(82vh-220px)] overflow-y-auto pr-1">
+                  {filteredRecipes.map((dish) => {
+                    const inCart = cart.find((i) => i.recipe_id === dish.id)
+                    const priceBs = convertUsdToBs(dish.price, bcvRate)
+                    return (
+                      <button
+                        key={dish.id}
+                        type="button"
+                        onClick={() => addToCart(dish)}
+                        className={`p-3 rounded-xl border text-left flex flex-col justify-between transition-all duration-150 active:scale-[0.98] ${
+                          inCart
+                            ? 'border-primary bg-primary/5 ring-1 ring-primary shadow-2xs'
+                            : 'border-border bg-card hover:border-primary/40 hover:shadow-2xs'
+                        }`}
+                      >
+                        <div>
+                          <span className="text-[10px] text-muted-foreground font-semibold block mb-0.5">
+                            {dish.category}
+                          </span>
+                          <p className="font-bold text-xs sm:text-sm text-foreground leading-tight line-clamp-2">
+                            {dish.name}
+                          </p>
+                        </div>
+                        <div className="mt-2.5 flex items-end justify-between pt-1.5 border-t border-border/40">
+                          <div>
+                            <span className="font-mono font-extrabold text-xs sm:text-sm text-foreground block leading-none">
+                              ${dish.price.toFixed(2)}
+                            </span>
+                            <span className="font-mono text-[10px] text-muted-foreground font-medium leading-tight">
+                              {formatBs(priceBs)}
+                            </span>
+                          </div>
+                          {inCart ? (
+                            <span className="size-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold font-mono">
+                              {inCart.quantity}
+                            </span>
+                          ) : (
+                            <span className="size-6 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
+                              <Plus className="size-3.5" />
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Columna Derecha: Comanda / Platos Agregados (Sticky & Scroll Propio) (5 cols) */}
+              <div className="lg:col-span-5 lg:sticky lg:top-0 h-fit max-h-[calc(82vh-140px)] bg-card rounded-2xl border p-4 flex flex-col justify-between space-y-3 shadow-xs">
+                <div>
+                  <div className="flex items-center justify-between pb-2 border-b">
+                    <span className="font-bold text-xs text-foreground">
+                      Platos Agregados ({totalItemsCount})
+                    </span>
+                    {cart.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setCart([])}
+                        className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-1 transition-colors"
+                      >
+                        <Trash2 className="size-3" /> Limpiar
+                      </button>
+                    )}
+                  </div>
+
+                  {cart.length === 0 ? (
+                    <div className="py-12 text-center text-muted-foreground text-xs space-y-2">
+                      <ShoppingBag className="size-8 mx-auto text-muted-foreground/30" />
+                      <p className="font-semibold text-foreground">Comanda vacía</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        Toca los platos a la izquierda para agregarlos al pedido.
+                      </p>
+                    </div>
+                  ) : (
+                    /* Lista de Platos con Scroll Propio Vertical */
+                    <div className="space-y-2.5 max-h-[calc(82vh-320px)] min-h-[180px] overflow-y-auto pr-1 mt-2">
+                      {cart.map((item) => (
+                        <div key={item.id} className="p-2.5 rounded-xl border bg-muted/20 space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <span className="font-bold text-xs text-foreground leading-snug block">{item.name}</span>
+                              {item.quantity > 1 && (
+                                <span className="text-[10px] text-muted-foreground">
+                                  {item.quantity} unidades agrupadas
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              <span className="font-mono font-bold text-xs text-primary block leading-none">
+                                ${(item.quantity * item.unit_price).toFixed(2)}
+                              </span>
+                              <span className="font-mono text-[10px] text-muted-foreground">
+                                {formatBs(convertUsdToBs(item.quantity * item.unit_price, bcvRate))}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1 bg-card px-1 py-0.5 rounded-md border">
+                              <button
+                                type="button"
+                                onClick={() => updateQuantity(item.id, -1)}
+                                className="size-6 flex items-center justify-center hover:bg-muted rounded"
+                              >
+                                <Minus className="size-3" />
+                              </button>
+                              <span className="w-6 text-center font-mono font-bold text-xs">
+                                {item.quantity}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => updateQuantity(item.id, 1)}
+                                className="size-6 flex items-center justify-center hover:bg-muted rounded"
+                              >
+                                <Plus className="size-3" />
+                              </button>
+                            </div>
+
+                            <div className="flex items-center gap-1">
+                              {/* Botón para separar 1 unidad si hay varias */}
+                              {item.quantity > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSplitItem(item.id)}
+                                  className="h-6 px-1.5 rounded-md border border-primary/30 text-primary hover:bg-primary/10 text-[10px] font-semibold flex items-center gap-1"
+                                  title="Separa 1 unidad en otra fila para personalizarla por separado"
+                                >
+                                  <Scissors className="size-2.5" />
+                                  <span>Separar 1</span>
+                                </button>
+                              )}
+
+                              {/* Botón para personalizar / quitar ingredientes */}
+                              <button
+                                type="button"
+                                onClick={() => setCustomizingItem(item)}
+                                className={`h-6 px-1.5 rounded-md border text-[10px] font-semibold flex items-center gap-1 ${
+                                  item.notes
+                                    ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-600 font-bold'
+                                    : 'border-input bg-card text-muted-foreground hover:text-foreground'
+                                }`}
+                                title="Personalizar o quitar ingredientes de este plato"
+                              >
+                                <SlidersHorizontal className="size-2.5" />
+                                <span>{item.notes ? 'Modificado' : 'Personalizar'}</span>
+                              </button>
+                            </div>
+
+                            <span className="text-[10px] font-mono text-muted-foreground">
+                              ${item.unit_price.toFixed(2)} c/u
+                            </span>
+                          </div>
+
+                          {/* Etiqueta de notas culinarias si existen */}
+                          {item.notes && (
+                            <div className="flex items-center justify-between p-1.5 px-2 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-900 dark:text-amber-200 text-[11px] font-semibold">
+                              <span className="flex items-center gap-1 truncate">
+                                <span>⚠️</span>
+                                <span className="truncate">{item.notes}</span>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => updateItemNotes(item.id, '')}
+                                className="text-[10px] text-muted-foreground hover:text-destructive shrink-0 ml-1.5"
+                                title="Restablecer a estándar"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Notas culinarias del plato */}
+                          <Input
+                            placeholder="Nota de cocina (ej: Sin cebolla)..."
+                            value={item.notes || ''}
+                            onChange={(e) => updateItemNotes(item.id, e.target.value)}
+                            className="h-7 text-[11px] bg-card"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Totales y Botón para Continuar al Paso 2 */}
+                <div className="pt-3 border-t space-y-3 mt-auto">
+                  <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20 space-y-0.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-foreground font-semibold">Total USD:</span>
+                      <span className="font-mono font-black text-xl text-primary">${total.toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs pt-1 border-t border-primary/20">
+                      <span className="text-muted-foreground">Total Bs (BCV):</span>
+                      <span className="font-mono font-bold text-foreground">{formatBs(totalBs)}</span>
+                    </div>
+                  </div>
+
+                  <Button
+                    type="button"
+                    disabled={cart.length === 0}
+                    onClick={() => setStep('assign')}
+                    className="h-11 rounded-xl text-xs font-bold w-full gap-2 shadow-xs bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    <span>Continuar a Asignar Mesa / Datos</span>
+                    <ArrowRight className="size-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          /* ========================================================= */
+          /* PASO 2: ASIGNACIÓN DE MESA / CLIENTE Y GENERAR COMANDA    */
+          /* ========================================================= */
+          <>
+            <DialogHeader className="pb-3 border-b shrink-0">
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => setStep('catalog')}
+                  className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 font-bold transition-colors"
+                >
+                  <ArrowLeft className="size-4 text-primary" />
+                  <span>Volver a Platos</span>
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs font-bold">
+                    {orderType === 'dine_in' ? '🍽️ Salón' : orderType === 'takeaway' ? '🛍️ Para Llevar' : '🛵 Delivery'}
+                  </Badge>
+                  <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
+                    ${total.toFixed(2)} ({formatBs(totalBs)})
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <DialogTitle className="text-base sm:text-lg font-extrabold text-foreground">
+                  Asignar Mesa y Confirmar Comanda
+                </DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground">
+                  Ingresa la mesa o datos del cliente. La orden se generará y enviará a cocina sin cobro inmediato.
+                </DialogDescription>
+              </div>
+            </DialogHeader>
+
+            <div className="flex-1 overflow-y-auto py-3 max-w-xl mx-auto w-full space-y-4">
+              
+              {/* Resumen Compacto del Pedido */}
+              <div className="p-3 rounded-xl bg-muted/30 border flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <ChefHat className="size-4 text-primary" />
+                  <span className="font-semibold text-foreground">
+                    {totalItemsCount} {totalItemsCount === 1 ? 'plato en la orden' : 'platos en la orden'}
+                  </span>
+                </div>
+                <span className="font-mono font-black text-sm text-foreground">
+                  Total: ${total.toFixed(2)}
+                </span>
+              </div>
+
+              {/* Si es Salón: Selector Visual de Mesas */}
+              {orderType === 'dine_in' && (
+                <div className="p-3.5 rounded-2xl border bg-card space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <span>Mesa asignada:</span>
+                      <span className="text-destructive font-black">*</span>
+                    </label>
+                    {selectedTable && (
+                      <span className="text-xs font-bold text-primary">
+                        Mesa {tables.find((t) => t.id === selectedTable)?.number} Seleccionada
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                    {tables.map((tbl) => {
+                      const isOccupied = tbl.status === 'occupied'
+                      const isSelected = selectedTable === tbl.id
+                      return (
+                        <button
+                          key={tbl.id}
+                          type="button"
+                          onClick={() => setSelectedTable(tbl.id)}
+                          className={`p-2.5 rounded-xl text-xs font-bold border transition-all text-center flex flex-col items-center justify-center gap-1 ${
+                            isSelected
+                              ? 'border-primary bg-primary text-primary-foreground shadow-xs ring-2 ring-primary/40'
+                              : isOccupied
+                              ? 'border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-300 hover:bg-amber-500/20'
+                              : 'border-input bg-card text-foreground hover:border-primary/40'
+                          }`}
+                        >
+                          <span className="leading-tight">Mesa {tbl.number}</span>
+                          <span
+                            className={`text-[9px] px-1.5 py-0.2 rounded-full font-normal ${
+                              isSelected
+                                ? 'bg-primary-foreground/20 text-primary-foreground'
+                                : isOccupied
+                                ? 'bg-amber-500/20 text-amber-800 dark:text-amber-200'
+                                : 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+                            }`}
+                          >
+                            {isOccupied ? 'Ocupada' : 'Libre'}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
               )}
 
-              {/* Selector de Cliente Registrado / Manual */}
-              <div className="pt-2 border-t border-border/50">
+              {/* Selector de Cliente Registrado o Manual */}
+              <div className="p-3.5 rounded-2xl border bg-card space-y-2">
+                <label className="text-xs font-bold text-foreground block">
+                  {orderType === 'dine_in' ? 'Cliente (Opcional):' : 'Datos del Cliente:'}
+                </label>
                 <CustomerSelector
                   customers={customers}
                   selectedCustomerId={selectedCustomerId}
@@ -349,406 +662,91 @@ export function NewOrderDialog({
                   }}
                   customName={customerName}
                   onChangeCustomName={setCustomerName}
-                  isCreditSale={isPayingNow && isCredit}
                   totalAmount={total}
+                />
+              </div>
+
+              {/* Teléfono y Dirección si aplica para Llevar o Delivery */}
+              {(orderType === 'takeaway' || orderType === 'delivery') && (
+                <div className="p-3.5 rounded-2xl border bg-card space-y-2.5 text-xs">
+                  <div className="space-y-1">
+                    <label className="font-bold text-muted-foreground flex items-center gap-1">
+                      <Phone className="size-3 text-primary" />
+                      <span>Teléfono de contacto:</span>
+                    </label>
+                    <Input
+                      placeholder="Ej. +58 412 1234567..."
+                      value={customerPhone}
+                      onChange={(e) => setCustomerPhone(e.target.value)}
+                      className="h-8 text-xs bg-muted/20"
+                    />
+                  </div>
+
+                  {orderType === 'delivery' && (
+                    <div className="space-y-1">
+                      <label className="font-bold text-muted-foreground flex items-center gap-1">
+                        <MapPin className="size-3 text-primary" />
+                        <span>Dirección de Entrega:</span>
+                        <span className="text-destructive font-black">*</span>
+                      </label>
+                      <Input
+                        placeholder="Ej. Av. Principal, Edif. Los Olivos, Apto 4-B..."
+                        value={deliveryAddress}
+                        onChange={(e) => setDeliveryAddress(e.target.value)}
+                        className="h-8 text-xs bg-muted/20"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Nota General de Cocina / Comanda */}
+              <div className="p-3.5 rounded-2xl border bg-card space-y-1 text-xs">
+                <label className="font-bold text-muted-foreground">
+                  Instrucción especial para cocina (Opcional):
+                </label>
+                <Input
+                  placeholder="Ej. Servir todo junto, comensal alérgico al marisco, término general..."
+                  value={orderNotes}
+                  onChange={(e) => setOrderNotes(e.target.value)}
+                  className="h-8 text-xs bg-muted/20"
                 />
               </div>
             </div>
 
-            {/* Catálogo de Platos con Precios Duales (USD y Bs) */}
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-bold text-foreground">Platos del Menú:</span>
-                <div className="relative w-48">
-                  <Search className="size-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar plato..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="h-8 pl-8 text-xs bg-muted/20 rounded-lg"
-                  />
-                </div>
-              </div>
+            <DialogFooter className="pt-3 border-t shrink-0 flex items-center justify-between gap-2 sm:gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setStep('catalog')}
+                disabled={loading}
+                className="h-10 rounded-xl text-xs font-semibold gap-1.5"
+              >
+                <ArrowLeft className="size-3.5" />
+                <span>Volver a Platos</span>
+              </Button>
 
-              {/* Categorías */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                <button
-                  type="button"
-                  onClick={() => setSelectedCategory('ALL')}
-                  className={`text-xs px-3 py-1 rounded-lg font-semibold whitespace-nowrap transition-colors ${
-                    selectedCategory === 'ALL'
-                      ? 'bg-foreground text-background shadow-2xs'
-                      : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
-                  }`}
-                >
-                  Todos ({finalRecipes.length})
-                </button>
-                {categories.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setSelectedCategory(c)}
-                    className={`text-xs px-3 py-1 rounded-lg font-semibold whitespace-nowrap transition-colors ${
-                      selectedCategory === c
-                        ? 'bg-foreground text-background shadow-2xs'
-                        : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
-                    }`}
-                  >
-                    {c}
-                  </button>
-                ))}
-              </div>
-
-              {/* Grid de Platos */}
-              <div className="grid grid-cols-2 gap-2.5 max-h-[250px] overflow-y-auto pr-1">
-                {filteredRecipes.map((dish) => {
-                  const inCart = cart.find((i) => i.recipe_id === dish.id)
-                  const priceBs = convertUsdToBs(dish.price, bcvRate)
-                  return (
-                    <button
-                      key={dish.id}
-                      type="button"
-                      onClick={() => addToCart(dish)}
-                      className={`p-3 rounded-xl border text-left flex flex-col justify-between transition-all duration-150 active:scale-[0.98] ${
-                        inCart
-                          ? 'border-primary bg-primary/5 ring-1 ring-primary shadow-2xs'
-                          : 'border-border bg-card hover:border-primary/40 hover:shadow-2xs'
-                      }`}
-                    >
-                      <div>
-                        <span className="text-[10px] text-muted-foreground font-semibold block mb-0.5">
-                          {dish.category}
-                        </span>
-                        <p className="font-bold text-xs sm:text-sm text-foreground leading-tight line-clamp-2">
-                          {dish.name}
-                        </p>
-                      </div>
-                      <div className="mt-2.5 flex items-end justify-between pt-1.5 border-t border-border/40">
-                        <div>
-                          <span className="font-mono font-extrabold text-xs sm:text-sm text-foreground block leading-none">
-                            ${dish.price.toFixed(2)}
-                          </span>
-                          <span className="font-mono text-[10px] text-muted-foreground font-medium leading-tight">
-                            {formatBs(priceBs)}
-                          </span>
-                        </div>
-                        {inCart ? (
-                          <span className="size-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold font-mono">
-                            {inCart.quantity}
-                          </span>
-                        ) : (
-                          <span className="size-6 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
-                            <Plus className="size-3.5" />
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Columna Derecha: Comanda / Resumen de Items (5 cols) */}
-          <div className="lg:col-span-5 bg-card rounded-2xl border p-4 flex flex-col justify-between space-y-3">
-            <div>
-              <div className="flex items-center justify-between pb-2 border-b">
-                <span className="font-bold text-xs text-foreground">
-                  Platos Agregados ({totalItemsCount})
-                </span>
-                {cart.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setCart([])}
-                    className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-1"
-                  >
-                    <Trash2 className="size-3" /> Limpiar
-                  </button>
-                )}
-              </div>
-
-              {cart.length === 0 ? (
-                <div className="py-12 text-center text-muted-foreground text-xs space-y-2">
-                  <ShoppingBag className="size-8 mx-auto text-muted-foreground/30" />
-                  <p className="font-semibold text-foreground">Comanda vacía</p>
-                  <p className="text-[11px] text-muted-foreground">Toca los platos a la izquierda para agregarlos.</p>
-                </div>
-              ) : (
-                <div className="space-y-2.5 max-h-[240px] overflow-y-auto pr-1 mt-2">
-                  {cart.map((item) => (
-                    <div key={item.id} className="p-2.5 rounded-xl border bg-muted/20 space-y-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <span className="font-bold text-xs text-foreground leading-snug block">{item.name}</span>
-                          {item.quantity > 1 && (
-                            <span className="text-[10px] text-muted-foreground">
-                              {item.quantity} unidades agrupadas
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <span className="font-mono font-bold text-xs text-primary block leading-none">
-                            ${(item.quantity * item.unit_price).toFixed(2)}
-                          </span>
-                          <span className="font-mono text-[10px] text-muted-foreground">
-                            {formatBs(convertUsdToBs(item.quantity * item.unit_price, bcvRate))}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1 bg-card px-1 py-0.5 rounded-md border">
-                          <button
-                            type="button"
-                            onClick={() => updateQuantity(item.id, -1)}
-                            className="size-6 flex items-center justify-center hover:bg-muted rounded"
-                          >
-                            <Minus className="size-3" />
-                          </button>
-                          <span className="w-6 text-center font-mono font-bold text-xs">
-                            {item.quantity}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => updateQuantity(item.id, 1)}
-                            className="size-6 flex items-center justify-center hover:bg-muted rounded"
-                          >
-                            <Plus className="size-3" />
-                          </button>
-                        </div>
-
-                        <div className="flex items-center gap-1">
-                          {/* Botón para separar 1 unidad si hay varias */}
-                          {item.quantity > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => handleSplitItem(item.id)}
-                              className="h-6 px-1.5 rounded-md border border-primary/30 text-primary hover:bg-primary/10 text-[10px] font-semibold flex items-center gap-1"
-                              title="Separa 1 unidad en otra fila para personalizarla por separado"
-                            >
-                              <Scissors className="size-2.5" />
-                              <span>Separar 1</span>
-                            </button>
-                          )}
-
-                          {/* Botón para personalizar / quitar ingredientes */}
-                          <button
-                            type="button"
-                            onClick={() => setCustomizingItem(item)}
-                            className={`h-6 px-1.5 rounded-md border text-[10px] font-semibold flex items-center gap-1 ${
-                              item.notes
-                                ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-600 font-bold'
-                                : 'border-input bg-card text-muted-foreground hover:text-foreground'
-                            }`}
-                            title="Personalizar o quitar ingredientes de este plato"
-                          >
-                            <SlidersHorizontal className="size-2.5" />
-                            <span>{item.notes ? 'Modificado' : 'Personalizar'}</span>
-                          </button>
-                        </div>
-
-                        <span className="text-[10px] font-mono text-muted-foreground">
-                          ${item.unit_price.toFixed(2)} c/u
-                        </span>
-                      </div>
-
-                      {/* Etiqueta de notas culinarias si existen */}
-                      {item.notes && (
-                        <div className="flex items-center justify-between p-1.5 px-2 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-900 dark:text-amber-200 text-[11px] font-semibold">
-                          <span className="flex items-center gap-1 truncate">
-                            <span>⚠️</span>
-                            <span className="truncate">{item.notes}</span>
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => updateItemNotes(item.id, '')}
-                            className="text-[10px] text-muted-foreground hover:text-destructive shrink-0 ml-1.5"
-                            title="Restablecer a estándar"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Notas culinarias del plato */}
-                      <Input
-                        placeholder="Nota de cocina (ej: Sin cebolla)..."
-                        value={item.notes || ''}
-                        onChange={(e) => updateItemNotes(item.id, e.target.value)}
-                        className="h-7 text-[11px] bg-card"
-                      />
-                      <div className="flex items-center gap-1 overflow-x-auto pb-0.5 scrollbar-none">
-                        {QUICK_NOTES.map((qn) => (
-                          <button
-                            key={qn}
-                            type="button"
-                            onClick={() => appendQuickNote(item, qn)}
-                            className="text-[9px] px-1.5 py-0.5 rounded-md bg-card border text-muted-foreground hover:text-foreground font-medium shrink-0"
-                          >
-                            + {qn}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Totales y Opciones de Cobro */}
-            <div className="pt-3 border-t space-y-3 mt-auto">
-              <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20 space-y-0.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-foreground font-semibold">Total USD:</span>
-                  <span className="font-mono font-black text-xl text-primary">${total.toFixed(2)}</span>
-                </div>
-                <div className="flex items-center justify-between text-xs pt-1 border-t border-primary/20">
-                  <span className="text-muted-foreground">Total Bs (BCV):</span>
-                  <span className="font-mono font-bold text-foreground">{formatBs(totalBs)}</span>
-                </div>
-              </div>
-
-              {/* Modo de Pago / Cobro Directo Expandible */}
-              {isPayingNow && (
-                <div className="p-3 rounded-xl border bg-card space-y-2 text-xs">
-                  <span className="font-bold text-foreground block">Método de Cobro:</span>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-                    {[
-                      { name: 'Efectivo USD', label: '💵 Efectivo $' },
-                      { name: 'Efectivo Bs', label: '🇻🇪 Efectivo Bs' },
-                      { name: 'Pago Móvil', label: '🏦 Pago Móvil' },
-                      { name: 'Punto de Venta / Tarjeta', label: '💳 Punto / Tarjeta' },
-                      { name: 'Zelle', label: '📱 Zelle ($)' },
-                      { name: 'Crédito', label: '👥 Crédito', highlight: true },
-                    ].map((m) => (
-                      <button
-                        key={m.name}
-                        type="button"
-                        onClick={() => {
-                          setPaymentMethod(m.name)
-                          setRefError('')
-                        }}
-                        className={`p-2 rounded-lg text-[11px] font-semibold border transition-all truncate ${
-                          paymentMethod === m.name
-                            ? 'border-primary bg-primary text-primary-foreground font-bold shadow-xs'
-                            : m.highlight
-                            ? 'border-indigo-500/40 bg-indigo-500/5 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/10'
-                            : 'border-input bg-card text-muted-foreground hover:bg-muted'
-                        }`}
-                      >
-                        {m.label || m.name}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Detalle si es Venta a Crédito */}
-                  {isCredit && (
-                    <div className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 space-y-1.5">
-                      <div className="flex items-center gap-1.5 text-indigo-700 dark:text-indigo-300 font-bold">
-                        <Coins className="size-4" />
-                        <span>Cargar a Cuenta Corriente del Cliente</span>
-                      </div>
-                      {selectedCustomer ? (
-                        <p className="text-[11px] text-muted-foreground leading-tight">
-                          Se incrementará la deuda de <strong>{selectedCustomer.full_name}</strong> por <strong>${total.toFixed(2)}</strong>.
-                          Nueva deuda: <strong className="font-mono text-foreground">${((selectedCustomer.current_debt || 0) + total).toFixed(2)}</strong>.
-                        </p>
-                      ) : (
-                        <p className="text-[11px] text-destructive font-semibold">
-                          ⚠️ Debes seleccionar un cliente registrado en la parte izquierda.
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Campo de Referencia para No-Efectivo y No-Crédito */}
-                  {!isCash && !isCredit && (
-                    <div className="space-y-1.5 pt-1">
-                      <label className="text-[11px] font-bold text-foreground flex items-center gap-1">
-                        <span>Nº de Referencia Bancaria:</span>
-                        <span className="text-destructive font-black">*</span>
-                      </label>
-                      <Input
-                        placeholder="Ej. 123456 (Últimos 4-6 dígitos)..."
-                        value={referenceNumber}
-                        onChange={(e) => {
-                          setReferenceNumber(e.target.value)
-                          if (e.target.value.trim()) setRefError('')
-                        }}
-                        className={`h-8 text-xs font-mono ${refError ? 'border-destructive ring-1 ring-destructive' : ''}`}
-                      />
-                      {refError && (
-                        <p className="text-[10px] text-destructive flex items-center gap-1">
-                          <AlertCircle className="size-3" /> {refError}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {isCash && (
-                    <div className="space-y-1 pt-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] text-muted-foreground">Monto recibido ($):</span>
-                        <Input
-                          type="number"
-                          placeholder="0.00"
-                          value={cashTendered}
-                          onChange={(e) => setCashTendered(e.target.value)}
-                          className="h-7 w-24 text-xs font-mono text-right"
-                        />
-                      </div>
-                      {numericTendered >= total && (
-                        <div className="flex items-center justify-between text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
-                          <span>Cambio:</span>
-                          <span className="font-mono">${changeDue.toFixed(2)}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Botones de Guardado / Cobro */}
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={cart.length === 0 || loading}
-                  onClick={() => handleSaveOrder(false)}
-                  className="h-11 rounded-xl text-xs font-bold"
-                >
-                  {loading && !isPayingNow ? <Loader2 className="size-4 animate-spin" /> : 'Guardar Activo (Por Cobrar)'}
-                </Button>
-
-                {isPayingNow ? (
-                  <Button
-                    type="button"
-                    disabled={cart.length === 0 || loading}
-                    onClick={() => handleSaveOrder(true)}
-                    className={`h-11 rounded-xl text-xs font-bold gap-1.5 shadow-xs ${
-                      isCredit
-                        ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                        : 'bg-primary text-primary-foreground'
-                    }`}
-                  >
-                    {loading ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
-                    <span>{isCredit ? 'Confirmar Crédito' : 'Confirmar Cobro'}</span>
-                  </Button>
+              <Button
+                type="button"
+                onClick={handleGenerateOrder}
+                disabled={loading || (orderType === 'dine_in' && !selectedTable)}
+                className="h-10 px-5 rounded-xl text-xs font-bold gap-2 shadow-xs bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    <span>Generando Comanda...</span>
+                  </>
                 ) : (
-                  <Button
-                    type="button"
-                    disabled={cart.length === 0 || loading}
-                    onClick={() => setIsPayingNow(true)}
-                    className="h-11 rounded-xl text-xs font-bold gap-1.5 shadow-xs"
-                  >
+                  <>
                     <CheckCircle2 className="size-4" />
-                    <span>Cobrar / Crédito</span>
-                  </Button>
+                    <span>Generar Comanda / Guardar Orden</span>
+                  </>
                 )}
-              </div>
-            </div>
-          </div>
-        </div>
+              </Button>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
 
