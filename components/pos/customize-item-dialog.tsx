@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect } from 'react'
 import {
@@ -13,14 +13,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import {
-  UtensilsCrossed,
   Check,
   X,
-  AlertCircle,
   SlidersHorizontal,
-  Flame,
-  ChefHat,
-  Sparkles
+  ChefHat
 } from 'lucide-react'
 import { formatCulinaryExclusions } from '@/lib/domain/pos'
 
@@ -38,25 +34,18 @@ export interface CustomizeItemDialogProps {
   onSaveCustomization: (itemId: string, notes: string, applyMode: 'single' | 'all') => void
 }
 
-const DEFAULT_INGREDIENTS = [
-  'Cebolla',
-  'Tomate',
-  'Lechuga',
-  'Pepinillos',
-  'Queso',
-  'Salsa de la casa',
-  'Mayonesa',
-  'Mostaza',
-  'Sal'
-]
-
-const QUICK_CULINARY_NOTES = [
-  'Término medio',
-  'Bien cocido',
-  'Salsa aparte',
-  'Extra queso',
-  'Poco picante',
-  'Para llevar'
+// Insumos base o técnicos de cocina que no son ingredientes finales retirables por el comensal
+const NON_REMOVABLE_BASICS = [
+  'aceite para freír',
+  'aceite',
+  'harina especial',
+  'harina',
+  'sal',
+  'agua',
+  'levadura',
+  'panko japonés',
+  'panko',
+  'huevo'
 ]
 
 export function CustomizeItemDialog({
@@ -70,8 +59,10 @@ export function CustomizeItemDialog({
   const [excludedIngredients, setExcludedIngredients] = useState<string[]>([])
   const [extraNotes, setExtraNotes] = useState('')
 
-  // Lista efectiva de ingredientes a mostrar
-  const effectiveIngredients = ingredients.length > 0 ? ingredients : DEFAULT_INGREDIENTS
+  // Ingredientes efectivos que conforman el platillo (excluyendo insumos técnicos)
+  const effectiveIngredients = (ingredients || []).filter(
+    (ing) => !NON_REMOVABLE_BASICS.includes(ing.trim().toLowerCase())
+  )
 
   // Sincronizar estado cuando se abre el diálogo para un ítem
   useEffect(() => {
@@ -111,16 +102,6 @@ export function CustomizeItemDialog({
     )
   }
 
-  function appendQuickNote(note: string) {
-    setExtraNotes((prev) => {
-      const parts = prev.split(',').map((p) => p.trim()).filter(Boolean)
-      if (parts.includes(note)) {
-        return parts.filter((p) => p !== note).join(', ')
-      }
-      return parts.length > 0 ? `${prev}, ${note}` : note
-    })
-  }
-
   const generatedNote = formatCulinaryExclusions(excludedIngredients, extraNotes)
 
   function handleSave() {
@@ -151,7 +132,7 @@ export function CustomizeItemDialog({
             <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                  <span>¿A cuántas hamburguesas aplica este cambio?</span>
+                  <span>¿A cuántas unidades aplica este cambio?</span>
                 </span>
                 <Badge variant="outline" className="bg-background text-primary font-mono text-[11px] font-bold">
                   {item.quantity} unidades
@@ -203,86 +184,69 @@ export function CustomizeItemDialog({
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
                 <ChefHat className="size-3.5 text-primary" />
-                <span>Ingredientes de la Receta (Toca para quitar):</span>
+                <span>Ingredientes del platillo (Toca para quitar):</span>
               </label>
               {excludedIngredients.length > 0 && (
                 <button
                   type="button"
                   onClick={() => setExcludedIngredients([])}
-                  className="text-[11px] text-muted-foreground hover:text-primary"
+                  className="text-[11px] text-muted-foreground hover:text-primary transition-colors"
                 >
                   Restablecer todos
                 </button>
               )}
             </div>
 
-            <p className="text-[11px] text-muted-foreground">
-              Los ingredientes marcados en rojo no serán agregados por cocina.
-            </p>
+            {effectiveIngredients.length > 0 ? (
+              <>
+                <p className="text-[11px] text-muted-foreground">
+                  Los ingredientes marcados en rojo no serán agregados por cocina.
+                </p>
 
-            <div className="flex flex-wrap gap-1.5 pt-1">
-              {effectiveIngredients.map((ing) => {
-                const isExcluded = excludedIngredients.includes(ing)
-                return (
-                  <button
-                    key={ing}
-                    type="button"
-                    onClick={() => toggleExcludeIngredient(ing)}
-                    className={`text-xs px-3 py-1.5 rounded-xl font-medium transition-all active:scale-95 border flex items-center gap-1.5 ${
-                      isExcluded
-                        ? 'bg-rose-500/15 border-rose-500/40 text-rose-700 dark:text-rose-300 line-through font-semibold shadow-2xs'
-                        : 'bg-muted/50 hover:bg-muted text-foreground border-border hover:border-primary/40'
-                    }`}
-                  >
-                    {isExcluded ? (
-                      <X className="size-3 text-rose-600 dark:text-rose-400 shrink-0" />
-                    ) : (
-                      <span className="size-1.5 rounded-full bg-emerald-500 shrink-0" />
-                    )}
-                    <span>{isExcluded ? `Sin ${ing}` : ing}</span>
-                  </button>
-                )
-              })}
-            </div>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {effectiveIngredients.map((ing) => {
+                    const isExcluded = excludedIngredients.includes(ing)
+                    return (
+                      <button
+                        key={ing}
+                        type="button"
+                        onClick={() => toggleExcludeIngredient(ing)}
+                        className={`text-xs px-3 py-1.5 rounded-xl font-medium transition-all active:scale-95 border flex items-center gap-1.5 ${
+                          isExcluded
+                            ? 'bg-rose-500/15 border-rose-500/40 text-rose-700 dark:text-rose-300 line-through font-semibold shadow-2xs'
+                            : 'bg-muted/50 hover:bg-muted text-foreground border-border hover:border-primary/40'
+                        }`}
+                      >
+                        {isExcluded ? (
+                          <X className="size-3 text-rose-600 dark:text-rose-400 shrink-0" />
+                        ) : (
+                          <span className="size-1.5 rounded-full bg-emerald-500 shrink-0" />
+                        )}
+                        <span>{isExcluded ? `Sin ${ing}` : ing}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </>
+            ) : (
+              <div className="p-3 rounded-xl bg-muted/30 border border-dashed text-xs text-muted-foreground text-center">
+                Este producto no tiene ingredientes individuales desglosados en su receta.
+                <br />
+                Puedes especificar exclusiones o extras en el campo de notas abajo.
+              </div>
+            )}
           </div>
 
-          {/* Opciones culinarias rápidas */}
-          <div className="space-y-2 pt-1 border-t">
+          {/* Campo de texto libre para extras y especificaciones especiales */}
+          <div className="space-y-1.5 pt-1 border-t">
             <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-              <Sparkles className="size-3.5 text-amber-500" />
-              <span>Opciones adicionales de cocina:</span>
-            </label>
-            <div className="flex flex-wrap gap-1.5">
-              {QUICK_CULINARY_NOTES.map((q) => {
-                const isSelected = extraNotes.includes(q)
-                return (
-                  <button
-                    key={q}
-                    type="button"
-                    onClick={() => appendQuickNote(q)}
-                    className={`text-[11px] px-2.5 py-1 rounded-lg border font-medium transition-all ${
-                      isSelected
-                        ? 'bg-primary text-primary-foreground border-primary font-bold shadow-2xs'
-                        : 'bg-card text-muted-foreground hover:text-foreground border-input hover:border-primary/30'
-                    }`}
-                  >
-                    + {q}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Campo de texto libre para notas específicas */}
-          <div className="space-y-1.5 pt-1">
-            <label className="text-[11px] font-semibold text-muted-foreground">
-              Otra nota o instrucción especial:
+              <span>Notas adicionales y extras (ej: extra salsa, término de cocción):</span>
             </label>
             <Input
-              placeholder="Ej. Poco tostado, alérgico a la mostaza, salsa aparte..."
+              placeholder="Escribe aquí extras, salsas adicionales, término de cocción, etc..."
               value={extraNotes}
               onChange={(e) => setExtraNotes(e.target.value)}
-              className="h-8 text-xs bg-muted/20"
+              className="h-9 text-xs bg-muted/20"
             />
           </div>
 
@@ -323,7 +287,7 @@ export function CustomizeItemDialog({
             <Check className="size-4" />
             <span>
               {isMultiple && applyMode === 'single'
-                ? 'Aplicar a Solo 1 Hamburguesa'
+                ? 'Aplicar a Solo 1 Plato'
                 : 'Guardar Personalización'}
             </span>
           </Button>
