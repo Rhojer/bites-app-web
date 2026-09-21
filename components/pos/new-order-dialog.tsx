@@ -245,63 +245,61 @@ export function NewOrderDialog({
         }
       />
 
-      <DialogContent className="sm:max-w-5xl w-full max-w-[calc(100%-1.5rem)] h-[88vh] max-h-[820px] flex flex-col p-4 sm:p-6 gap-0 rounded-2xl overflow-hidden">
+      <DialogContent className="sm:max-w-5xl w-full max-w-[calc(100%-1.5rem)] h-[88vh] max-h-[820px] flex flex-col p-3.5 sm:p-5 gap-0 rounded-2xl overflow-hidden">
         
         {/* ========================================================= */}
         {/* PASO 1: SELECCIÓN DE TIPO DE PEDIDO Y CATÁLOGO DE PLATOS */}
         {/* ========================================================= */}
         {step === 'catalog' ? (
           <>
-            <DialogHeader className="pb-3 border-b shrink-0 space-y-2">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <DialogTitle className="text-lg font-extrabold flex items-center gap-2 text-foreground">
-                    <UtensilsCrossed className="size-5 text-primary" />
-                    <span>Nuevo Pedido / Comanda</span>
-                  </DialogTitle>
-                  <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                    Selecciona el tipo de servicio y agrega los platos a la orden.
-                  </DialogDescription>
-                </div>
-
+            <DialogHeader className="pb-2.5 border-b shrink-0">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-muted text-foreground border">
+                  <DialogTitle className="text-base sm:text-lg font-extrabold flex items-center gap-2 text-foreground leading-none">
+                    <UtensilsCrossed className="size-4 sm:size-5 text-primary" />
+                    <span>Nuevo Pedido</span>
+                  </DialogTitle>
+                  <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-lg bg-muted text-foreground border hidden md:inline-flex">
                     BCV: Bs. {bcvRate.toFixed(2)}
                   </span>
                 </div>
-              </div>
 
-              {/* Selector de Tipo de Servicio */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-2 rounded-xl bg-muted/40 border gap-2">
-                <span className="text-xs font-bold text-foreground">Tipo de Pedido:</span>
-                <ButtonGroup className="w-full sm:w-72 grid grid-cols-3">
-                  <ButtonGroupItem
-                    active={orderType === 'dine_in'}
-                    onClick={() => setOrderType('dine_in')}
-                    className="py-1 px-2 text-xs font-bold"
-                  >
-                    🍽️ Salón
-                  </ButtonGroupItem>
-                  <ButtonGroupItem
-                    active={orderType === 'takeaway'}
-                    onClick={() => setOrderType('takeaway')}
-                    className="py-1 px-2 text-xs font-bold"
-                  >
-                    🛍️ Llevar
-                  </ButtonGroupItem>
-                  <ButtonGroupItem
-                    active={orderType === 'delivery'}
-                    onClick={() => setOrderType('delivery')}
-                    className="py-1 px-2 text-xs font-bold"
-                  >
-                    🛵 Delivery
-                  </ButtonGroupItem>
-                </ButtonGroup>
+                {/* Selector de Tipo de Servicio: Compacto, integrado arriba con ancho reducido */}
+                <div className="flex items-center justify-between sm:justify-end gap-2">
+                  <span className="text-xs font-bold text-foreground shrink-0">Tipo:</span>
+                  <ButtonGroup className="w-auto sm:w-60 grid grid-cols-3">
+                    <ButtonGroupItem
+                      active={orderType === 'dine_in'}
+                      onClick={() => setOrderType('dine_in')}
+                      className="py-1 px-1.5 text-xs font-bold"
+                    >
+                      🍽️ Salón
+                    </ButtonGroupItem>
+                    <ButtonGroupItem
+                      active={orderType === 'takeaway'}
+                      onClick={() => setOrderType('takeaway')}
+                      className="py-1 px-1.5 text-xs font-bold"
+                    >
+                      🛍️ Llevar
+                    </ButtonGroupItem>
+                    <ButtonGroupItem
+                      active={orderType === 'delivery'}
+                      onClick={() => setOrderType('delivery')}
+                      className="py-1 px-1.5 text-xs font-bold"
+                    >
+                      🛵 Delivery
+                    </ButtonGroupItem>
+                  </ButtonGroup>
+
+                  <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-lg bg-muted text-foreground border md:hidden shrink-0">
+                    Bs. {bcvRate.toFixed(2)}
+                  </span>
+                </div>
               </div>
             </DialogHeader>
 
             {/* Selector Móvil/Tablet entre Catálogo de Platos y Comanda (< lg) */}
-            <div className="flex lg:hidden items-center p-1 bg-muted/60 rounded-xl gap-1 shrink-0 my-2">
+            <div className="flex lg:hidden items-center p-1 bg-muted/60 rounded-xl gap-1 shrink-0 mt-2 mb-1">
               <button
                 type="button"
                 onClick={() => setMobileTab('catalog')}
@@ -336,7 +334,7 @@ export function NewOrderDialog({
             </div>
 
             {/* Contenido Principal con 2 Columnas Independientes */}
-            <div className="flex-1 min-h-0 py-1 lg:py-2 grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 overflow-hidden">
+            <div className="flex-1 min-h-0 pt-2 pb-1 grid grid-cols-1 lg:grid-cols-12 gap-3.5 lg:gap-4 overflow-hidden">
               
               {/* Columna Izquierda: Catálogo de Platos (7 cols en lg, visible en mobile solo si mobileTab === 'catalog') */}
               <div className={cn(
@@ -439,7 +437,7 @@ export function NewOrderDialog({
 
               {/* Columna Derecha: Comanda / Platos Agregados (5 cols en lg, toggleable en mobile) */}
               <div className={cn(
-                "flex-col h-full min-h-0 bg-card rounded-2xl border p-3.5 sm:p-4 shadow-xs lg:col-span-5",
+                "flex-col h-full min-h-0 bg-card rounded-2xl border p-3 sm:p-3.5 shadow-xs lg:col-span-5",
                 mobileTab === 'cart' ? "flex" : "hidden lg:flex"
               )}>
                 {/* Header de la Comanda (shrink-0) */}
