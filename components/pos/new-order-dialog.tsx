@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { cn } from '@/lib/utils'
 import {
   Dialog,
   DialogContent,
@@ -78,6 +79,7 @@ export function NewOrderDialog({
 }: NewOrderDialogProps) {
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState<'catalog' | 'assign'>('catalog')
+  const [mobileTab, setMobileTab] = useState<'catalog' | 'cart'>('catalog')
   const [orderType, setOrderType] = useState<'dine_in' | 'takeaway' | 'delivery'>('dine_in')
   const [selectedTable, setSelectedTable] = useState<string>('')
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null)
@@ -93,6 +95,13 @@ export function NewOrderDialog({
   const [customizingItem, setCustomizingItem] = useState<CartItem | null>(null)
   const [bcvRate, setBcvRate] = useState(813.74)
   const [loading, setLoading] = useState(false)
+  const assignScrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (step === 'assign') {
+      assignScrollRef.current?.scrollTo({ top: 0, behavior: 'instant' })
+    }
+  }, [step])
 
   useEffect(() => {
     const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
@@ -153,6 +162,7 @@ export function NewOrderDialog({
 
   function resetForm() {
     setStep('catalog')
+    setMobileTab('catalog')
     setCart([])
     setSelectedCustomerId(null)
     setCustomerName('')
@@ -162,6 +172,13 @@ export function NewOrderDialog({
     setSelectedTable('')
     setOrderType('dine_in')
     setLoading(false)
+  }
+
+  function handleGoToAssign() {
+    setStep('assign')
+    setTimeout(() => {
+      assignScrollRef.current?.scrollTo({ top: 0, behavior: 'instant' })
+    }, 0)
   }
 
   async function handleGenerateOrder() {
@@ -228,7 +245,7 @@ export function NewOrderDialog({
         }
       />
 
-      <DialogContent className="sm:max-w-5xl h-[90vh] max-h-[92vh] flex flex-col p-5 sm:p-6 rounded-2xl overflow-hidden">
+      <DialogContent className="sm:max-w-5xl w-full max-w-[calc(100%-1.5rem)] h-[88vh] max-h-[820px] flex flex-col p-4 sm:p-6 gap-0 rounded-2xl overflow-hidden">
         
         {/* ========================================================= */}
         {/* PASO 1: SELECCIÓN DE TIPO DE PEDIDO Y CATÁLOGO DE PLATOS */}
@@ -255,9 +272,9 @@ export function NewOrderDialog({
               </div>
 
               {/* Selector de Tipo de Servicio */}
-              <div className="flex items-center justify-between p-2 rounded-xl bg-muted/40 border">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-2 rounded-xl bg-muted/40 border gap-2">
                 <span className="text-xs font-bold text-foreground">Tipo de Pedido:</span>
-                <ButtonGroup className="w-64 sm:w-72 grid grid-cols-3">
+                <ButtonGroup className="w-full sm:w-72 grid grid-cols-3">
                   <ButtonGroupItem
                     active={orderType === 'dine_in'}
                     onClick={() => setOrderType('dine_in')}
@@ -283,11 +300,49 @@ export function NewOrderDialog({
               </div>
             </DialogHeader>
 
+            {/* Selector Móvil/Tablet entre Catálogo de Platos y Comanda (< lg) */}
+            <div className="flex lg:hidden items-center p-1 bg-muted/60 rounded-xl gap-1 shrink-0 my-2">
+              <button
+                type="button"
+                onClick={() => setMobileTab('catalog')}
+                className={cn(
+                  "flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5",
+                  mobileTab === 'catalog'
+                    ? "bg-card text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <UtensilsCrossed className="size-3.5" />
+                <span>Platos Menú</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileTab('cart')}
+                className={cn(
+                  "flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5",
+                  mobileTab === 'cart'
+                    ? "bg-card text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <ShoppingBag className="size-3.5" />
+                <span>Comanda ({totalItemsCount})</span>
+                {totalItemsCount > 0 && (
+                  <span className="ml-1 text-[10px] font-mono font-black text-primary">
+                    ${total.toFixed(2)}
+                  </span>
+                )}
+              </button>
+            </div>
+
             {/* Contenido Principal con 2 Columnas Independientes */}
-            <div className="flex-1 min-h-0 py-2 grid grid-cols-1 lg:grid-cols-12 gap-5 overflow-y-auto lg:overflow-hidden">
+            <div className="flex-1 min-h-0 py-1 lg:py-2 grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 overflow-hidden">
               
-              {/* Columna Izquierda: Catálogo de Platos (7 cols) */}
-              <div className="lg:col-span-7 flex flex-col h-full min-h-0 space-y-2.5">
+              {/* Columna Izquierda: Catálogo de Platos (7 cols en lg, visible en mobile solo si mobileTab === 'catalog') */}
+              <div className={cn(
+                "flex-col h-full min-h-0 space-y-2.5 lg:col-span-7",
+                mobileTab === 'catalog' ? "flex" : "hidden lg:flex"
+              )}>
                 {/* Barra de Búsqueda y Categorías (shrink-0) */}
                 <div className="space-y-2 shrink-0">
                   <div className="flex items-center justify-between gap-2">
@@ -382,8 +437,11 @@ export function NewOrderDialog({
                 </div>
               </div>
 
-              {/* Columna Derecha: Comanda / Platos Agregados (5 cols) */}
-              <div className="lg:col-span-5 flex flex-col h-full min-h-0 bg-card rounded-2xl border p-4 shadow-xs">
+              {/* Columna Derecha: Comanda / Platos Agregados (5 cols en lg, toggleable en mobile) */}
+              <div className={cn(
+                "flex-col h-full min-h-0 bg-card rounded-2xl border p-3.5 sm:p-4 shadow-xs lg:col-span-5",
+                mobileTab === 'cart' ? "flex" : "hidden lg:flex"
+              )}>
                 {/* Header de la Comanda (shrink-0) */}
                 <div className="flex items-center justify-between pb-2 border-b shrink-0">
                   <span className="font-bold text-xs text-foreground">
@@ -523,12 +581,12 @@ export function NewOrderDialog({
             {/* ========================================================= */}
             {/* PIE DE PÁGINA PERMANENTE Y FUERA DEL SCROLL (PASO 1)     */}
             {/* ========================================================= */}
-            <DialogFooter className="shrink-0 pt-3 border-t bg-card/95 backdrop-blur-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+            <DialogFooter className="shrink-0 pt-3 border-t bg-card/95 backdrop-blur-xs flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-3">
               {/* Totales visibles permanentemente a la izquierda */}
-              <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-xs text-muted-foreground font-semibold">Total comanda:</span>
-                  <span className="font-mono font-black text-xl text-primary">${total.toFixed(2)}</span>
+              <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-start">
+                <div className="flex items-baseline gap-1.5 sm:gap-2">
+                  <span className="text-xs text-muted-foreground font-semibold">Total:</span>
+                  <span className="font-mono font-black text-lg sm:text-xl text-primary">${total.toFixed(2)}</span>
                   <span className="font-mono text-xs text-muted-foreground">({formatBs(totalBs)})</span>
                 </div>
                 <span className="text-xs font-semibold text-muted-foreground">
@@ -543,19 +601,33 @@ export function NewOrderDialog({
                   variant="outline"
                   size="sm"
                   onClick={() => setOpen(false)}
-                  className="h-10 rounded-xl text-xs font-semibold px-3"
+                  className="h-10 rounded-xl text-xs font-semibold px-3 flex-1 sm:flex-initial"
                 >
                   Cancelar
                 </Button>
 
+                {/* En pantallas móviles/tablets (< lg), botón directo a Comanda si está en catálogo */}
+                {mobileTab === 'catalog' && cart.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setMobileTab('cart')}
+                    className="h-10 px-3 rounded-xl text-xs font-bold flex lg:hidden items-center gap-1.5 flex-1"
+                  >
+                    <ShoppingBag className="size-3.5" />
+                    <span>Ver Comanda ({totalItemsCount})</span>
+                  </Button>
+                )}
+
                 <Button
                   type="button"
                   disabled={cart.length === 0}
-                  onClick={() => setStep('assign')}
-                  className="h-10 px-5 rounded-xl text-xs font-bold gap-2 shadow-xs bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto"
+                  onClick={handleGoToAssign}
+                  className="h-10 px-4 sm:px-5 rounded-xl text-xs font-bold gap-2 shadow-xs bg-primary text-primary-foreground hover:bg-primary/90 flex-1 sm:flex-initial"
                 >
-                  <span>Continuar a Asignar Mesa / Datos</span>
-                  <ArrowRight className="size-4" />
+                  <span className="truncate">Continuar a Asignar Mesa</span>
+                  <ArrowRight className="size-4 shrink-0" />
                 </Button>
               </div>
             </DialogFooter>
@@ -596,7 +668,7 @@ export function NewOrderDialog({
               </div>
             </DialogHeader>
 
-            <div className="flex-1 min-h-0 overflow-y-auto py-3 max-w-xl mx-auto w-full space-y-4">
+            <div ref={assignScrollRef} className="flex-1 min-h-0 overflow-y-auto py-3 max-w-xl mx-auto w-full space-y-4 pr-1">
               
               {/* Resumen Compacto del Pedido */}
               <div className="p-3 rounded-xl bg-muted/30 border flex items-center justify-between text-xs">
@@ -732,18 +804,25 @@ export function NewOrderDialog({
             {/* ========================================================= */}
             {/* PIE DE PÁGINA PERMANENTE Y FUERA DEL SCROLL (PASO 2)     */}
             {/* ========================================================= */}
-            <DialogFooter className="shrink-0 pt-3 border-t bg-card flex flex-col sm:flex-row items-center justify-between gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setStep('catalog')}
-                disabled={loading}
-                className="h-10 rounded-xl text-xs font-semibold gap-1.5 w-full sm:w-auto"
-              >
-                <ArrowLeft className="size-3.5" />
-                <span>Volver a Platos</span>
-              </Button>
+            <DialogFooter className="shrink-0 pt-3 border-t bg-card flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-3">
+              <div className="flex items-center justify-between w-full sm:w-auto gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setStep('catalog')}
+                  disabled={loading}
+                  className="h-10 rounded-xl text-xs font-semibold gap-1.5 flex-1 sm:flex-initial"
+                >
+                  <ArrowLeft className="size-3.5" />
+                  <span>Volver a Platos</span>
+                </Button>
+
+                <div className="flex sm:hidden items-baseline gap-1 font-mono text-xs">
+                  <span className="text-muted-foreground font-medium">Total:</span>
+                  <span className="font-bold text-primary">${total.toFixed(2)}</span>
+                </div>
+              </div>
 
               <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
                 <div className="hidden sm:flex items-baseline gap-1.5 font-mono text-xs">
@@ -756,7 +835,7 @@ export function NewOrderDialog({
                   type="button"
                   onClick={handleGenerateOrder}
                   disabled={loading || (orderType === 'dine_in' && !selectedTable)}
-                  className="h-10 px-6 rounded-xl text-xs font-bold gap-2 shadow-xs bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto"
+                  className="h-10 px-6 rounded-xl text-xs font-bold gap-2 shadow-xs bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto flex-1 sm:flex-initial"
                 >
                   {loading ? (
                     <>

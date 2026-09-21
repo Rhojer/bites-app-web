@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { sanitizeText } from '@/lib/security'
+import { sanitizeText, validateUUID } from '@/lib/security'
 
 export interface CartItemInput {
   recipe_id: string
@@ -66,8 +66,15 @@ export async function processOrderAction(data: {
   }
 
   const sanitizedCustomerName = sanitizeText(data.customer_name)
+  const sanitizedPhone = sanitizeText(data.customer_phone)
   const sanitizedNotes = sanitizeText(data.notes)
   const isCredit = data.is_credit === true || data.payment_method_name === 'Crédito'
+  let orderNotes = sanitizedNotes || (isCredit ? 'Venta a Crédito / Cuenta Corriente' : '')
+  if (sanitizedPhone) {
+    orderNotes = orderNotes ? `${orderNotes} | Tel: ${sanitizedPhone}` : `Tel: ${sanitizedPhone}`
+  }
+
+  const validUserId = data.customer_id && validateUUID(data.customer_id) ? data.customer_id : null
   const isPaid = !isCredit && data.is_paid !== false
   const orderStatus = isPaid || isCredit ? 'completed' : 'active'
   const paymentStatus = isCredit ? 'credit' : isPaid ? 'paid' : 'pending'
@@ -82,15 +89,14 @@ export async function processOrderAction(data: {
     .insert({
       type: data.type || 'dine_in',
       table_id: data.table_id || null,
-      customer_id: data.customer_id || null,
+      user_id: validUserId,
       customer_name: sanitizedCustomerName || (data.table_id ? 'Mesa Salón' : 'Cliente Mostrador'),
-      customer_phone: sanitizeText(data.customer_phone) || null,
       status: orderStatus,
       payment_status: paymentStatus,
       kitchen_status: kitchenStatus,
       subtotal: calculatedSubtotal,
       total: calculatedTotal,
-      notes: sanitizedNotes || (isCredit ? 'Venta a Crédito / Cuenta Corriente' : null),
+      notes: orderNotes || null,
     })
     .select('id')
     .single()
@@ -314,12 +320,14 @@ export async function payActiveOrderAction(params: {
   }
 
   // Actualizar orden a pagada o crédito y completada
+  const validUserId = params.customerId && validateUUID(params.customerId) ? params.customerId : null
+
   const { error: ordErr } = await supabase
     .from('orders')
     .update({
       payment_status: isCredit ? 'credit' : 'paid',
       status: 'completed',
-      customer_id: params.customerId || undefined,
+      user_id: validUserId,
       updated_at: new Date().toISOString(),
     })
     .eq('id', params.orderId)
