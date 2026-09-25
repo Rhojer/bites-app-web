@@ -1,10 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Receipt, LayoutGrid, History, DollarSign, Clock, CheckCircle2, TrendingUp } from 'lucide-react'
+import { Plus, Receipt, LayoutGrid, DollarSign, Clock, CheckCircle2, TrendingUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { NewOrderDialog } from '@/components/pos/new-order-dialog'
 import { ActiveOrdersList, ActiveOrder } from '@/components/pos/active-orders-list'
@@ -123,14 +122,6 @@ export function PosDashboardView({
             <LayoutGrid className="size-4" />
             <span>Terminal Rápida (Catálogo)</span>
           </TabsTrigger>
-
-          <TabsTrigger
-            value="history"
-            className="rounded-lg px-3.5 py-1.5 text-xs font-bold gap-2 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs transition-all"
-          >
-            <History className="size-4" />
-            <span>Historial ({todayOrders.length})</span>
-          </TabsTrigger>
         </TabsList>
 
         {/* 1. Pedidos Activos (Comandas Abiertas) */}
@@ -146,68 +137,6 @@ export function PosDashboardView({
             customers={customers}
             recipeIngredientsMap={recipeIngredientsMap}
           />
-        </TabsContent>
-
-        {/* 3. Historial del Día */}
-        <TabsContent value="history" className="space-y-4 pt-1">
-          <Card className="border rounded-2xl shadow-xs overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left">
-                <thead className="bg-muted/40 border-b text-muted-foreground font-semibold">
-                  <tr>
-                    <th className="p-3.5">Comanda #</th>
-                    <th className="p-3.5">Hora</th>
-                    <th className="p-3.5">Cliente / Mesa</th>
-                    <th className="p-3.5">Tipo</th>
-                    <th className="p-3.5">Estado Pago</th>
-                    <th className="p-3.5 text-right">Total</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/50 font-medium">
-                  {todayOrders.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="p-8 text-center text-muted-foreground">
-                        No hay ventas registradas el día de hoy.
-                      </td>
-                    </tr>
-                  ) : (
-                    todayOrders.map((ord) => (
-                      <tr key={ord.id} className="hover:bg-muted/20">
-                        <td className="p-3.5 font-mono font-bold text-foreground">
-                          #{ord.id.slice(0, 8)}
-                        </td>
-                        <td className="p-3.5 text-muted-foreground font-mono">
-                          {new Date(ord.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </td>
-                        <td className="p-3.5 font-bold text-foreground">
-                          {ord.customer_name || 'Salón'}
-                        </td>
-                        <td className="p-3.5">
-                          <Badge variant="outline" className="text-[10px] font-semibold">
-                            {ord.type === 'dine_in' ? '🍽️ Salón' : ord.type === 'takeaway' ? '🛍️ Para Llevar' : '🛵 Delivery'}
-                          </Badge>
-                        </td>
-                        <td className="p-3.5">
-                          {ord.payment_status === 'paid' ? (
-                            <Badge className="bg-emerald-600 text-white text-[10px] font-bold">
-                              Pagado
-                            </Badge>
-                          ) : (
-                            <Badge className="bg-amber-500 text-black text-[10px] font-bold">
-                              Por Cobrar
-                            </Badge>
-                          )}
-                        </td>
-                        <td className="p-3.5 text-right font-mono font-bold text-sm text-foreground">
-                          ${ord.total.toFixed(2)}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>
