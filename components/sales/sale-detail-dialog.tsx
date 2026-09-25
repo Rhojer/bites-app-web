@@ -64,15 +64,15 @@ export function SaleDetailDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col p-4 sm:p-6 rounded-2xl overflow-hidden">
         {/* Cabecera de la Modal */}
-        <DialogHeader className="pb-3 border-b shrink-0">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <Receipt className="size-5 text-primary" />
-              <DialogTitle className="text-base sm:text-lg font-extrabold text-foreground">
+        <DialogHeader className="pb-3 border-b shrink-0 text-left">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2 min-w-0">
+              <Receipt className="size-5 text-primary shrink-0" />
+              <DialogTitle className="text-base sm:text-lg font-extrabold text-foreground truncate">
                 Venta #{sale.id.slice(0, 8).toUpperCase()}
               </DialogTitle>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 shrink-0">
               {isCredit ? (
                 <Badge className="bg-indigo-600 text-white text-[11px] font-bold px-2.5 py-0.5">
                   Venta a Crédito
@@ -88,15 +88,15 @@ export function SaleDetailDialog({
               )}
             </div>
           </div>
-          <DialogDescription className="text-xs text-muted-foreground flex items-center justify-between pt-1">
-            <span className="flex items-center gap-1.5">
-              <Calendar className="size-3 text-muted-foreground" />
+          <DialogDescription className="text-xs text-muted-foreground flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pt-1">
+            <span className="flex items-center gap-1.5 flex-wrap">
+              <Calendar className="size-3 text-muted-foreground shrink-0" />
               <span className="capitalize">{dateFormatted}</span>
               <span>•</span>
-              <Clock className="size-3 text-muted-foreground" />
+              <Clock className="size-3 text-muted-foreground shrink-0" />
               <span className="font-mono font-bold text-foreground">{timeFormatted}</span>
             </span>
-            <Badge variant="outline" className="text-[10px] font-bold">
+            <Badge variant="outline" className="text-[10px] font-bold shrink-0 self-start sm:self-auto">
               {sale.type === 'dine_in'
                 ? `🍽️ Salón ${sale.table_number ? `(Mesa ${sale.table_number})` : ''}`
                 : sale.type === 'takeaway'

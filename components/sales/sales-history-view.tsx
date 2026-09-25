@@ -4,17 +4,10 @@ import { useState } from 'react'
 import {
   Search,
   Calendar,
-  DollarSign,
-  TrendingUp,
   Receipt,
-  Users,
   ChevronRight,
   Filter,
-  UtensilsCrossed,
-  Clock,
-  User,
-  ShoppingBag,
-  Sparkles
+  User
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -22,7 +15,6 @@ import { Badge } from '@/components/ui/badge'
 import {
   SaleRecord,
   groupSalesByDay,
-  calculateSalesMetrics,
   filterSales,
   formatCustomerDisplay,
   formatSaleTime
@@ -53,103 +45,21 @@ export function SalesHistoryView({
     paymentStatus,
   })
 
-  // 2. Calcular métricas del conjunto filtrado
-  const metrics = calculateSalesMetrics(filteredSales)
-  const totalRevenueBs = convertUsdToBs(metrics.totalRevenue, bcvRate)
-  const averageTicketBs = convertUsdToBs(metrics.averageTicket, bcvRate)
-
-  // 3. Agrupar cronológicamente por día
+  // 2. Agrupar cronológicamente por día
   const dayGroups = groupSalesByDay(filteredSales)
 
   return (
-    <div className="space-y-6">
-      {/* ========================================================= */}
-      {/* TARJETAS DE MÉTRICAS GENERALES                            */}
-      {/* ========================================================= */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {/* Total Ingresos */}
-        <div className="p-4 rounded-2xl bg-card border shadow-xs space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground">Total Ventas</span>
-            <span className="size-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-              <DollarSign className="size-4" />
-            </span>
-          </div>
-          <div className="space-y-0.5">
-            <p className="font-mono font-black text-xl sm:text-2xl text-foreground">
-              ${metrics.totalRevenue.toFixed(2)}
-            </p>
-            <p className="font-mono text-xs text-muted-foreground font-medium">
-              {formatBs(totalRevenueBs)}
-            </p>
-          </div>
-        </div>
-
-        {/* Órdenes Realizadas */}
-        <div className="p-4 rounded-2xl bg-card border shadow-xs space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground">Comandas Cerradas</span>
-            <span className="size-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-              <Receipt className="size-4" />
-            </span>
-          </div>
-          <div className="space-y-0.5">
-            <p className="font-mono font-black text-xl sm:text-2xl text-foreground">
-              {metrics.totalOrders}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {dayGroups.length} {dayGroups.length === 1 ? 'día con ventas' : 'días con ventas'}
-            </p>
-          </div>
-        </div>
-
-        {/* Ticket Promedio */}
-        <div className="p-4 rounded-2xl bg-card border shadow-xs space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground">Ticket Promedio</span>
-            <span className="size-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-              <TrendingUp className="size-4" />
-            </span>
-          </div>
-          <div className="space-y-0.5">
-            <p className="font-mono font-black text-xl sm:text-2xl text-foreground">
-              ${metrics.averageTicket.toFixed(2)}
-            </p>
-            <p className="font-mono text-xs text-muted-foreground font-medium">
-              {formatBs(averageTicketBs)}
-            </p>
-          </div>
-        </div>
-
-        {/* Clientes vs Invitados */}
-        <div className="p-4 rounded-2xl bg-card border shadow-xs space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground">Clientes Registrados</span>
-            <span className="size-8 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
-              <Users className="size-4" />
-            </span>
-          </div>
-          <div className="space-y-0.5">
-            <p className="font-mono font-black text-xl sm:text-2xl text-foreground">
-              {metrics.namedCustomersCount}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              + {metrics.guestCustomersCount} invitados
-            </p>
-          </div>
-        </div>
-      </div>
-
+    <div className="space-y-4 sm:space-y-6">
       {/* ========================================================= */}
       {/* BARRA DE FILTROS Y BÚSQUEDA EN TIEMPO REAL                */}
       {/* ========================================================= */}
-      <div className="p-4 rounded-2xl bg-card border shadow-xs space-y-3">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div className="p-3 sm:p-4 rounded-2xl bg-card border shadow-xs space-y-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
           {/* Campo de Búsqueda */}
           <div className="relative flex-1">
             <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Buscar por ID, nombre de cliente, plato, mesa..."
+              placeholder="Buscar por ID, cliente, plato, mesa..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9 h-10 rounded-xl bg-muted/20 text-xs sm:text-sm"
@@ -157,13 +67,13 @@ export function SalesHistoryView({
           </div>
 
           {/* Rango de Fechas */}
-          <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none shrink-0">
             <Button
               type="button"
               variant={dateRange === 'today' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setDateRange('today')}
-              className="rounded-xl text-xs font-semibold h-9"
+              className="rounded-xl text-xs font-semibold h-9 px-3 shrink-0"
             >
               Hoy
             </Button>
@@ -172,7 +82,7 @@ export function SalesHistoryView({
               variant={dateRange === '7days' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setDateRange('7days')}
-              className="rounded-xl text-xs font-semibold h-9"
+              className="rounded-xl text-xs font-semibold h-9 px-3 shrink-0"
             >
               7 Días
             </Button>
@@ -181,7 +91,7 @@ export function SalesHistoryView({
               variant={dateRange === '30days' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setDateRange('30days')}
-              className="rounded-xl text-xs font-semibold h-9"
+              className="rounded-xl text-xs font-semibold h-9 px-3 shrink-0"
             >
               30 Días
             </Button>
@@ -190,7 +100,7 @@ export function SalesHistoryView({
               variant={dateRange === 'all' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setDateRange('all')}
-              className="rounded-xl text-xs font-semibold h-9"
+              className="rounded-xl text-xs font-semibold h-9 px-3 shrink-0"
             >
               Todo
             </Button>
@@ -198,92 +108,98 @@ export function SalesHistoryView({
         </div>
 
         {/* Filtros Secundarios: Tipo de Servicio y Estado de Pago */}
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t text-xs">
-          <span className="text-muted-foreground font-semibold flex items-center gap-1">
-            <Filter className="size-3" /> Tipo:
-          </span>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 pt-2.5 border-t text-xs">
+          {/* Tipo de Servicio */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+            <span className="text-muted-foreground font-semibold flex items-center gap-1 shrink-0 mr-1 text-[11px] sm:text-xs">
+              <Filter className="size-3" /> Tipo:
+            </span>
 
-          <button
-            type="button"
-            onClick={() => setOrderType('all')}
-            className={`px-2.5 py-1 rounded-lg font-semibold transition-colors ${
-              orderType === 'all'
-                ? 'bg-foreground text-background'
-                : 'bg-muted/50 text-muted-foreground hover:bg-muted'
-            }`}
-          >
-            Todos
-          </button>
-          <button
-            type="button"
-            onClick={() => setOrderType('dine_in')}
-            className={`px-2.5 py-1 rounded-lg font-semibold transition-colors ${
-              orderType === 'dine_in'
-                ? 'bg-foreground text-background'
-                : 'bg-muted/50 text-muted-foreground hover:bg-muted'
-            }`}
-          >
-            🍽️ Salón
-          </button>
-          <button
-            type="button"
-            onClick={() => setOrderType('takeaway')}
-            className={`px-2.5 py-1 rounded-lg font-semibold transition-colors ${
-              orderType === 'takeaway'
-                ? 'bg-foreground text-background'
-                : 'bg-muted/50 text-muted-foreground hover:bg-muted'
-            }`}
-          >
-            🛍️ Para Llevar
-          </button>
-          <button
-            type="button"
-            onClick={() => setOrderType('delivery')}
-            className={`px-2.5 py-1 rounded-lg font-semibold transition-colors ${
-              orderType === 'delivery'
-                ? 'bg-foreground text-background'
-                : 'bg-muted/50 text-muted-foreground hover:bg-muted'
-            }`}
-          >
-            🛵 Delivery
-          </button>
+            <button
+              type="button"
+              onClick={() => setOrderType('all')}
+              className={`px-2.5 py-1 rounded-lg font-semibold shrink-0 transition-colors ${
+                orderType === 'all'
+                  ? 'bg-foreground text-background'
+                  : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              Todos
+            </button>
+            <button
+              type="button"
+              onClick={() => setOrderType('dine_in')}
+              className={`px-2.5 py-1 rounded-lg font-semibold shrink-0 transition-colors ${
+                orderType === 'dine_in'
+                  ? 'bg-foreground text-background'
+                  : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              🍽️ Salón
+            </button>
+            <button
+              type="button"
+              onClick={() => setOrderType('takeaway')}
+              className={`px-2.5 py-1 rounded-lg font-semibold shrink-0 transition-colors ${
+                orderType === 'takeaway'
+                  ? 'bg-foreground text-background'
+                  : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              🛍️ Llevar
+            </button>
+            <button
+              type="button"
+              onClick={() => setOrderType('delivery')}
+              className={`px-2.5 py-1 rounded-lg font-semibold shrink-0 transition-colors ${
+                orderType === 'delivery'
+                  ? 'bg-foreground text-background'
+                  : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              🛵 Delivery
+            </button>
+          </div>
 
-          <span className="text-muted-foreground font-semibold ml-auto flex items-center gap-1">
-            Pago:
-          </span>
-          <button
-            type="button"
-            onClick={() => setPaymentStatus('all')}
-            className={`px-2.5 py-1 rounded-lg font-semibold transition-colors ${
-              paymentStatus === 'all'
-                ? 'bg-foreground text-background'
-                : 'bg-muted/50 text-muted-foreground hover:bg-muted'
-            }`}
-          >
-            Todos
-          </button>
-          <button
-            type="button"
-            onClick={() => setPaymentStatus('paid')}
-            className={`px-2.5 py-1 rounded-lg font-semibold transition-colors ${
-              paymentStatus === 'paid'
-                ? 'bg-emerald-600 text-white'
-                : 'bg-muted/50 text-muted-foreground hover:bg-muted'
-            }`}
-          >
-            Pagados
-          </button>
-          <button
-            type="button"
-            onClick={() => setPaymentStatus('credit')}
-            className={`px-2.5 py-1 rounded-lg font-semibold transition-colors ${
-              paymentStatus === 'credit'
-                ? 'bg-indigo-600 text-white'
-                : 'bg-muted/50 text-muted-foreground hover:bg-muted'
-            }`}
-          >
-            A Crédito
-          </button>
+          {/* Estado de Pago */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+            <span className="text-muted-foreground font-semibold flex items-center gap-1 shrink-0 mr-1 text-[11px] sm:text-xs">
+              Pago:
+            </span>
+            <button
+              type="button"
+              onClick={() => setPaymentStatus('all')}
+              className={`px-2.5 py-1 rounded-lg font-semibold shrink-0 transition-colors ${
+                paymentStatus === 'all'
+                  ? 'bg-foreground text-background'
+                  : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              Todos
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaymentStatus('paid')}
+              className={`px-2.5 py-1 rounded-lg font-semibold shrink-0 transition-colors ${
+                paymentStatus === 'paid'
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              Pagados
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaymentStatus('credit')}
+              className={`px-2.5 py-1 rounded-lg font-semibold shrink-0 transition-colors ${
+                paymentStatus === 'credit'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              A Crédito
+            </button>
+          </div>
         </div>
       </div>
 
@@ -305,27 +221,27 @@ export function SalesHistoryView({
           {dayGroups.map((group) => {
             const dayTotalBs = convertUsdToBs(group.totalAmount, bcvRate)
             return (
-              <div key={group.dateKey} className="space-y-2.5">
+              <div key={group.dateKey} className="space-y-2">
                 {/* Encabezado del Día */}
-                <div className="flex items-center justify-between px-2">
-                  <div className="flex items-center gap-2">
-                    <span className="size-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                <div className="flex items-center justify-between px-1 sm:px-2 gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                    <span className="size-6 sm:size-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
                       <Calendar className="size-3.5" />
                     </span>
-                    <h3 className="text-xs sm:text-sm font-extrabold text-foreground">
+                    <h3 className="text-xs sm:text-sm font-extrabold text-foreground truncate">
                       {group.dateLabel}
                     </h3>
-                    <Badge variant="outline" className="text-[10px] font-semibold text-muted-foreground">
+                    <Badge variant="outline" className="text-[10px] font-semibold text-muted-foreground shrink-0">
                       {group.totalOrders} {group.totalOrders === 1 ? 'venta' : 'ventas'}
                     </Badge>
                   </div>
 
-                  <div className="text-right">
-                    <span className="font-mono font-black text-sm sm:text-base text-primary">
+                  <div className="text-right shrink-0">
+                    <span className="font-mono font-black text-sm sm:text-base text-primary block leading-tight">
                       ${group.totalAmount.toFixed(2)}
                     </span>
-                    <span className="font-mono text-[10px] text-muted-foreground ml-1.5 hidden sm:inline">
-                      ({formatBs(dayTotalBs)})
+                    <span className="font-mono text-[10px] text-muted-foreground block">
+                      {formatBs(dayTotalBs)}
                     </span>
                   </div>
                 </div>
@@ -343,28 +259,28 @@ export function SalesHistoryView({
                         key={sale.id}
                         type="button"
                         onClick={() => setSelectedSale(sale)}
-                        className="w-full text-left p-3.5 sm:p-4 rounded-2xl border bg-card hover:border-primary/50 hover:shadow-xs transition-all duration-150 flex items-center justify-between gap-3 group"
+                        className="w-full text-left p-3 sm:p-4 rounded-2xl border bg-card hover:border-primary/50 hover:shadow-xs transition-all duration-150 flex items-center justify-between gap-2.5 sm:gap-4 group active:scale-[0.99]"
                       >
                         {/* Lado Izquierdo: Hora, Tipo, ID y Cliente */}
-                        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                        <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1">
                           {/* Hora y Conteo */}
-                          <div className="flex flex-col items-center justify-center size-12 rounded-xl bg-muted/30 border shrink-0">
-                            <span className="font-mono font-extrabold text-xs text-foreground leading-tight">
+                          <div className="flex flex-col items-center justify-center size-10 sm:size-12 rounded-xl bg-muted/30 border shrink-0">
+                            <span className="font-mono font-extrabold text-[11px] sm:text-xs text-foreground leading-tight">
                               {time.split(' ')[0]}
                             </span>
-                            <span className="font-mono text-[9px] text-muted-foreground uppercase font-bold leading-none mt-0.5">
+                            <span className="font-mono text-[8px] sm:text-[9px] text-muted-foreground uppercase font-bold leading-none mt-0.5">
                               {time.split(' ')[1] || ''}
                             </span>
                           </div>
 
                           {/* Detalles del Pedido */}
-                          <div className="space-y-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-mono font-bold text-xs text-muted-foreground">
+                          <div className="space-y-1 min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                              <span className="font-mono font-bold text-[11px] sm:text-xs text-muted-foreground shrink-0">
                                 #{sale.id.slice(0, 6).toUpperCase()}
                               </span>
 
-                              <Badge variant="outline" className="text-[10px] font-bold py-0 h-5">
+                              <Badge variant="outline" className="text-[10px] font-bold py-0 h-5 shrink-0">
                                 {sale.type === 'dine_in'
                                   ? `🍽️ Salón ${sale.table_number ? `(Mesa ${sale.table_number})` : ''}`
                                   : sale.type === 'takeaway'
@@ -373,22 +289,22 @@ export function SalesHistoryView({
                               </Badge>
 
                               {sale.payment_status === 'credit' ? (
-                                <Badge className="bg-indigo-600 text-white text-[10px] font-bold py-0 h-5">
+                                <Badge className="bg-indigo-600 text-white text-[10px] font-bold py-0 h-5 shrink-0">
                                   Crédito
                                 </Badge>
                               ) : sale.payment_status === 'pending' ? (
-                                <Badge className="bg-amber-500 text-black text-[10px] font-bold py-0 h-5">
+                                <Badge className="bg-amber-500 text-black text-[10px] font-bold py-0 h-5 shrink-0">
                                   Por Cobrar
                                 </Badge>
                               ) : (
-                                <Badge className="bg-emerald-600 text-white text-[10px] font-bold py-0 h-5">
+                                <Badge className="bg-emerald-600 text-white text-[10px] font-bold py-0 h-5 shrink-0">
                                   Pagado
                                 </Badge>
                               )}
                             </div>
 
                             {/* Cliente o Invitado */}
-                            <div className="flex items-center gap-2 text-xs truncate">
+                            <div className="flex items-center gap-1.5 text-xs truncate">
                               <span
                                 className={`flex items-center gap-1 font-semibold truncate ${
                                   customerInfo.isGuest
@@ -400,9 +316,9 @@ export function SalesHistoryView({
                                 <span className="truncate">{customerInfo.displayName}</span>
                               </span>
 
-                              <span className="text-muted-foreground/60">•</span>
+                              <span className="text-muted-foreground/60 shrink-0">•</span>
 
-                              <span className="text-muted-foreground truncate text-[11px]">
+                              <span className="text-muted-foreground truncate text-[11px] shrink-0">
                                 {totalDishes} {totalDishes === 1 ? 'plato' : 'platos'}
                               </span>
                             </div>
@@ -410,18 +326,18 @@ export function SalesHistoryView({
                         </div>
 
                         {/* Lado Derecho: Monto Consumido y Flecha */}
-                        <div className="flex items-center gap-3 shrink-0">
+                        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                           <div className="text-right">
-                            <span className="font-mono font-black text-base sm:text-lg text-primary block leading-tight">
+                            <span className="font-mono font-black text-sm sm:text-lg text-primary block leading-tight">
                               ${sale.total.toFixed(2)}
                             </span>
-                            <span className="font-mono text-[10px] text-muted-foreground block">
+                            <span className="font-mono text-[9px] sm:text-[10px] text-muted-foreground block">
                               {formatBs(saleBs)}
                             </span>
                           </div>
 
-                          <div className="size-8 rounded-full bg-muted/40 group-hover:bg-primary group-hover:text-primary-foreground flex items-center justify-center transition-colors">
-                            <ChevronRight className="size-4" />
+                          <div className="size-7 sm:size-8 rounded-full bg-muted/40 group-hover:bg-primary group-hover:text-primary-foreground flex items-center justify-center transition-colors shrink-0">
+                            <ChevronRight className="size-3.5 sm:size-4" />
                           </div>
                         </div>
                       </button>
