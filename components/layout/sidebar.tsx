@@ -14,7 +14,8 @@ import {
   Sparkles,
   ChevronRight,
   AlertCircle,
-  ChefHat
+  ChefHat,
+  Receipt
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 
@@ -28,6 +29,11 @@ export const navigationItems = [
     name: 'Tomar Pedidos',
     href: '/pos',
     icon: MonitorCheck,
+  },
+  {
+    name: 'Historial de Ventas',
+    href: '/sales',
+    icon: Receipt,
   },
   {
     name: 'Menú y Costos',

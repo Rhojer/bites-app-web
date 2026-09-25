@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react'
 import Link from 'next/link'
@@ -14,6 +14,7 @@ import {
   TrendingDown,
   Settings,
   LayoutDashboard,
+  Receipt,
   X
 } from 'lucide-react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
@@ -26,6 +27,7 @@ const PRIMARY_TABS = [
 ]
 
 const MORE_MODULES = [
+  { name: 'Historial de Ventas', href: '/sales', icon: Receipt, desc: 'Ventas por día y desglose' },
   { name: 'Resumen', href: '/', icon: LayoutDashboard, desc: 'Métricas de ventas y metas' },
   { name: 'Menú y Costos', href: '/recipes', icon: UtensilsCrossed, desc: 'Platos, recetas y escandallos' },
   { name: 'Inventario', href: '/inventory', icon: Boxes, desc: 'Existencias y registro de mermas' },
