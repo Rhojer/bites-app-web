@@ -109,7 +109,7 @@ export default async function SalesHistoryPage() {
         description="Consulta todas las comandas cerradas agrupadas por día, montos y desglose de platos"
       />
 
-      <main className="p-4 sm:p-6 max-w-7xl mx-auto">
+      <main className="p-3.5 sm:p-6 max-w-5xl mx-auto">
         <SalesHistoryView initialSales={sales} bcvRate={bcvRate} />
       </main>
     </AdminShell>
