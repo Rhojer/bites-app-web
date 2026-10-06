@@ -1,0 +1,44 @@
+﻿name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to Production VPS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Execute Deployment via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            set -e
+            echo "Iniciando despliegue de Bites App Web..."
+            cd /var/www/bites-app-web
+
+            echo "Obteniendo cambios de git..."
+            git pull origin main
+
+            echo "Instalando dependencias..."
+            npm install --prefer-offline --no-audit
+
+            echo "Compilando proyecto Next.js..."
+            npm run build
+
+            echo "Recargando proceso PM2..."
+            pm2 reload bites-app-web --update-env || pm2 start ecosystem.config.js
+
+            echo "Guardando estado de PM2..."
+            pm2 save
+
+            echo "Despliegue en VPS finalizado con exito."
