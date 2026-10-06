@@ -14,7 +14,8 @@ import {
   CheckCircle2,
   MoreVertical,
   SlidersHorizontal,
-  UserPlus
+  UserPlus,
+  RefreshCw
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -22,6 +23,7 @@ import { Button } from '@/components/ui/button'
 import { CustomerDetailDialog, CustomerProfile } from './customer-detail-sheet'
 import { RecordCreditPaymentDialog } from './record-credit-payment-dialog'
 import { CreateCustomerDialog } from './create-customer-dialog'
+import { syncAllCustomerMetricsAction } from '@/app/crm/actions'
 
 interface CustomersDirectoryProps {
   customers: CustomerProfile[]
@@ -31,8 +33,21 @@ interface CustomersDirectoryProps {
 export function CustomersDirectory({ customers, paymentMethods }: CustomersDirectoryProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [filter, setFilter] = useState<'all' | 'with_debt' | 'vip' | 'birthday'>('all')
+  const [isSyncing, setIsSyncing] = useState(false)
 
   const currentMonth = new Date().getMonth() + 1
+
+  async function handleSyncMetrics() {
+    setIsSyncing(true)
+    try {
+      const res = await syncAllCustomerMetricsAction()
+      alert(`Sincronización completada. Se actualizaron ${res.updatedCount} de ${res.totalProcessed} clientes.`)
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Error al sincronizar métricas.')
+    } finally {
+      setIsSyncing(false)
+    }
+  }
 
   const filteredCustomers = customers.filter((customer) => {
     // Text search
@@ -135,6 +150,18 @@ export function CustomersDirectory({ customers, paymentMethods }: CustomersDirec
           >
             <Cake className="size-3 text-pink-500" />
             <span>Cumpleañeros ({countBirthday})</span>
+          </Button>
+
+          <Button
+            size="xs"
+            variant="outline"
+            onClick={handleSyncMetrics}
+            disabled={isSyncing}
+            className="text-xs h-8 gap-1.5 ml-auto text-muted-foreground hover:text-foreground"
+            title="Recalcular Total Gastado y visitas según órdenes reales registradas"
+          >
+            <RefreshCw className={`size-3 ${isSyncing ? 'animate-spin' : ''}`} />
+            <span>{isSyncing ? 'Sincronizando...' : 'Sincronizar'}</span>
           </Button>
         </div>
       </div>

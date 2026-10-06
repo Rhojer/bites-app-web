@@ -274,3 +274,73 @@ export async function createMarketingCampaignAction(formData: FormData) {
   revalidatePath('/crm')
   return { success: true, recipientsCount }
 }
+
+/**
+ * Sincroniza y recalcula el consumo histórico (total_spent) y frecuencia de órdenes
+ * para todos los clientes en base a las órdenes reales completadas o cobradas,
+ * asegurando además que no existan clientes con deuda donde total_spent sea menor a su deuda actual.
+ */
+export async function syncAllCustomerMetricsAction() {
+  const supabase = await createClient()
+
+  // 1. Obtener todos los perfiles de clientes
+  const { data: profiles, error: profErr } = await supabase
+    .from('profiles')
+    .select('id, current_debt, total_spent, total_orders_count')
+
+  if (profErr || !profiles) {
+    throw new Error(`Error al consultar clientes: ${profErr?.message}`)
+  }
+
+  // 2. Obtener todas las órdenes completadas o pagadas/a crédito
+  const { data: orders, error: ordErr } = await supabase
+    .from('orders')
+    .select('id, user_id, customer_id, total, status, payment_status')
+
+  if (ordErr) {
+    throw new Error(`Error al consultar órdenes: ${ordErr.message}`)
+  }
+
+  const validOrders = (orders || []).filter(
+    (o) => o.status === 'completed' || o.payment_status === 'paid' || o.payment_status === 'credit'
+  )
+
+  let updatedCount = 0
+
+  // 3. Para cada cliente, calcular totales y actualizar
+  for (const customer of profiles) {
+    const customerOrders = validOrders.filter(
+      (o) => o.user_id === customer.id || o.customer_id === customer.id
+    )
+
+    const ordersTotal = customerOrders.reduce((sum, o) => sum + (o.total || 0), 0)
+    const ordersCount = customerOrders.length
+    const currentDebt = customer.current_debt || 0
+
+    // Si el cliente tiene deuda registrada pero pocas o cero órdenes registradas,
+    // su total gastado debe ser al menos igual a lo que debe
+    const calculatedTotalSpent = Math.max(ordersTotal, currentDebt)
+    const calculatedOrdersCount = Math.max(ordersCount, currentDebt > 0 ? 1 : 0)
+
+    if (
+      customer.total_spent !== calculatedTotalSpent ||
+      customer.total_orders_count !== calculatedOrdersCount
+    ) {
+      const { error: updErr } = await supabase
+        .from('profiles')
+        .update({
+          total_spent: calculatedTotalSpent,
+          total_orders_count: calculatedOrdersCount,
+        })
+        .eq('id', customer.id)
+
+      if (!updErr) {
+        updatedCount++
+      }
+    }
+  }
+
+  revalidatePath('/crm')
+  return { success: true, updatedCount, totalProcessed: profiles.length }
+}
+
