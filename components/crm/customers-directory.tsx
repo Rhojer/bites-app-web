@@ -20,7 +20,6 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { CustomerDetailDialog, CustomerProfile } from './customer-detail-sheet'
-import { UpdateCreditDialog } from './update-credit-dialog'
 import { RecordCreditPaymentDialog } from './record-credit-payment-dialog'
 import { CreateCustomerDialog } from './create-customer-dialog'
 
@@ -31,7 +30,7 @@ interface CustomersDirectoryProps {
 
 export function CustomersDirectory({ customers, paymentMethods }: CustomersDirectoryProps) {
   const [searchTerm, setSearchTerm] = useState('')
-  const [filter, setFilter] = useState<'all' | 'with_debt' | 'with_credit' | 'vip' | 'birthday'>('all')
+  const [filter, setFilter] = useState<'all' | 'with_debt' | 'vip' | 'birthday'>('all')
 
   const currentMonth = new Date().getMonth() + 1
 
@@ -49,9 +48,6 @@ export function CustomersDirectory({ customers, paymentMethods }: CustomersDirec
     // Segment Filter
     if (filter === 'with_debt') {
       return (customer.current_debt || 0) > 0
-    }
-    if (filter === 'with_credit') {
-      return (customer.credit_limit || 0) > 0
     }
     if (filter === 'vip') {
       return (customer.total_spent || 0) >= 100 || (customer.total_orders_count || 0) >= 5
@@ -71,7 +67,6 @@ export function CustomersDirectory({ customers, paymentMethods }: CustomersDirec
 
   // Quick stats for filter pills
   const countWithDebt = customers.filter((c) => (c.current_debt || 0) > 0).length
-  const countWithCredit = customers.filter((c) => (c.credit_limit || 0) > 0).length
   const countVip = customers.filter((c) => (c.total_spent || 0) >= 100 || (c.total_orders_count || 0) >= 5).length
   const countBirthday = customers.filter((c) => {
     if (!c.birth_date) return false
@@ -124,15 +119,6 @@ export function CustomersDirectory({ customers, paymentMethods }: CustomersDirec
 
           <Button
             size="xs"
-            variant={filter === 'with_credit' ? 'default' : 'outline'}
-            onClick={() => setFilter('with_credit')}
-            className="text-xs h-8"
-          >
-            Con Crédito ({countWithCredit})
-          </Button>
-
-          <Button
-            size="xs"
             variant={filter === 'vip' ? 'default' : 'outline'}
             onClick={() => setFilter('vip')}
             className="text-xs h-8 gap-1"
@@ -162,7 +148,6 @@ export function CustomersDirectory({ customers, paymentMethods }: CustomersDirec
                 <th className="py-3.5 px-4">Cliente / Contacto</th>
                 <th className="py-3.5 px-4 text-center">Frecuencia</th>
                 <th className="py-3.5 px-4 text-right">Total Gastado</th>
-                <th className="py-3.5 px-4">Línea de Crédito</th>
                 <th className="py-3.5 px-4 text-right">Deuda Actual</th>
                 <th className="py-3.5 px-4">Estado Cuenta</th>
                 <th className="py-3.5 px-4 text-center">Acciones</th>
@@ -171,7 +156,7 @@ export function CustomersDirectory({ customers, paymentMethods }: CustomersDirec
             <tbody className="divide-y">
               {filteredCustomers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-14 text-muted-foreground">
+                  <td colSpan={6} className="text-center py-14 text-muted-foreground">
                     <Users className="size-10 mx-auto mb-2 text-muted-foreground/30" />
                     <p className="font-semibold text-sm text-foreground">No se encontraron clientes</p>
                     <p className="text-xs text-muted-foreground">Prueba con otro término de búsqueda o registra un nuevo cliente.</p>
@@ -179,13 +164,10 @@ export function CustomersDirectory({ customers, paymentMethods }: CustomersDirec
                 </tr>
               ) : (
                 filteredCustomers.map((customer) => {
-                  const creditLimit = customer.credit_limit || 0
                   const currentDebt = customer.current_debt || 0
                   const totalSpent = customer.total_spent || 0
                   const totalOrders = customer.total_orders_count || 0
                   const isVip = totalSpent >= 100 || totalOrders >= 5
-
-                  const usagePct = creditLimit > 0 ? Math.min(100, Math.round((currentDebt / creditLimit) * 100)) : 0
                   const cleanPhone = customer.phone ? customer.phone.replace(/[^0-9]/g, '') : null
 
                   return (
@@ -238,32 +220,6 @@ export function CustomersDirectory({ customers, paymentMethods }: CustomersDirec
                         ${totalSpent.toFixed(2)}
                       </td>
 
-                      {/* Línea de Crédito */}
-                      <td className="py-3.5 px-4">
-                        {creditLimit > 0 ? (
-                          <div className="space-y-1 min-w-[120px]">
-                            <div className="flex items-center justify-between text-[11px]">
-                              <span className="font-mono font-semibold">${creditLimit.toFixed(2)}</span>
-                              <span className="text-[10px] text-muted-foreground">{usagePct}%</span>
-                            </div>
-                            <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                              <div
-                                className={`h-full rounded-full ${
-                                  usagePct > 90
-                                    ? 'bg-rose-500'
-                                    : usagePct > 60
-                                    ? 'bg-amber-500'
-                                    : 'bg-emerald-500'
-                                }`}
-                                style={{ width: `${usagePct}%` }}
-                              />
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground text-[11px]">Sin crédito</span>
-                        )}
-                      </td>
-
                       {/* Deuda Actual */}
                       <td className="py-3.5 px-4 text-right font-mono font-bold">
                         {currentDebt > 0 ? (
@@ -275,21 +231,13 @@ export function CustomersDirectory({ customers, paymentMethods }: CustomersDirec
 
                       {/* Estado Cuenta */}
                       <td className="py-3.5 px-4">
-                        {currentDebt > 0 && currentDebt > creditLimit && creditLimit > 0 ? (
-                          <Badge variant="destructive" className="text-[10px] gap-1 font-semibold">
-                            <AlertTriangle className="size-3" /> Sobregiro
-                          </Badge>
-                        ) : currentDebt > 0 ? (
+                        {currentDebt > 0 ? (
                           <Badge variant="secondary" className="bg-amber-500/10 text-amber-700 dark:text-amber-300 text-[10px] border-amber-500/30 font-semibold">
                             Deuda Activa
                           </Badge>
-                        ) : creditLimit > 0 ? (
-                          <Badge variant="outline" className="text-emerald-700 dark:text-emerald-300 text-[10px] border-emerald-500/30 font-semibold bg-emerald-500/5">
-                            <CheckCircle2 className="size-3 text-emerald-600" /> Solvente
-                          </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-muted-foreground text-[10px]">
-                            Contado
+                          <Badge variant="outline" className="text-emerald-700 dark:text-emerald-300 text-[10px] border-emerald-500/30 font-semibold bg-emerald-500/5">
+                            <CheckCircle2 className="size-3 text-emerald-600" /> Al día
                           </Badge>
                         )}
                       </td>
@@ -310,19 +258,6 @@ export function CustomersDirectory({ customers, paymentMethods }: CustomersDirec
                               }
                             />
                           )}
-
-                          {/* Ajustar Crédito */}
-                          <UpdateCreditDialog
-                            customerId={customer.id}
-                            customerName={customer.full_name || 'Cliente'}
-                            currentCreditLimit={creditLimit}
-                            currentDebt={currentDebt}
-                            triggerButton={
-                              <Button size="xs" variant="ghost" className="h-8 px-2 text-[11px] text-muted-foreground hover:text-foreground rounded-lg">
-                                Crédito
-                              </Button>
-                            }
-                          />
 
                           {/* Ver Ficha Detallada */}
                           <CustomerDetailDialog
