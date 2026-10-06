@@ -253,13 +253,13 @@ function LoginFormContent() {
         <div className="my-auto max-w-4xl py-6 lg:py-0 text-center lg:text-left">
           <div className="relative inline-block group">
             <div className="absolute -inset-8 bg-gradient-to-r from-amber-500/25 via-amber-400/15 to-transparent rounded-3xl blur-3xl pointer-events-none" />
-            <div className="relative w-80 sm:w-96 md:w-[480px] lg:w-[560px] xl:w-[640px] 2xl:w-[720px] h-80 sm:h-96 md:h-[480px] lg:h-[560px] xl:h-[640px] 2xl:h-[720px] mx-auto lg:mx-0">
+            <div className="relative w-64 sm:w-80 md:w-96 lg:w-[420px] xl:w-[460px] 2xl:w-[500px] h-64 sm:h-80 md:h-96 lg:h-[420px] xl:h-[460px] 2xl:h-[500px] mx-auto lg:mx-0">
               <Image
                 src={`${process.env.NEXT_PUBLIC_BASE_PATH || '/bites-app-web'}/images/auth/bites-logo.png`}
                 alt="BITES Logo"
                 fill
                 priority
-                className="object-contain drop-shadow-[0_30px_50px_rgba(0,0,0,0.95)] filter contrast-125 brightness-105 logo-glow"
+                className="object-contain drop-shadow-[0_25px_45px_rgba(0,0,0,0.95)] filter contrast-125 brightness-105 logo-glow"
               />
             </div>
           </div>
