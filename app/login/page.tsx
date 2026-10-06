@@ -250,16 +250,16 @@ function LoginFormContent() {
         </div>
 
         {/* Centro: Logotipo de Gran Impacto y Slogan */}
-        <div className="my-auto max-w-2xl py-6 lg:py-0 text-center lg:text-left">
+        <div className="my-auto max-w-4xl py-6 lg:py-0 text-center lg:text-left">
           <div className="relative inline-block group">
-            <div className="absolute -inset-4 bg-gradient-to-r from-amber-500/15 via-amber-400/10 to-transparent rounded-3xl blur-2xl pointer-events-none" />
-            <div className="relative w-72 sm:w-96 lg:w-[460px] xl:w-[520px] h-36 sm:h-48 lg:h-56 xl:h-64 mx-auto lg:mx-0">
+            <div className="absolute -inset-8 bg-gradient-to-r from-amber-500/25 via-amber-400/15 to-transparent rounded-3xl blur-3xl pointer-events-none" />
+            <div className="relative w-80 sm:w-96 md:w-[480px] lg:w-[560px] xl:w-[640px] 2xl:w-[720px] h-80 sm:h-96 md:h-[480px] lg:h-[560px] xl:h-[640px] 2xl:h-[720px] mx-auto lg:mx-0">
               <Image
                 src={`${process.env.NEXT_PUBLIC_BASE_PATH || '/bites-app-web'}/images/auth/bites-logo.png`}
                 alt="BITES Logo"
                 fill
                 priority
-                className="object-contain drop-shadow-[0_20px_35px_rgba(0,0,0,0.85)] filter contrast-125 brightness-105 logo-glow"
+                className="object-contain drop-shadow-[0_30px_50px_rgba(0,0,0,0.95)] filter contrast-125 brightness-105 logo-glow"
               />
             </div>
           </div>
@@ -319,19 +319,19 @@ function LoginFormContent() {
           {/* Encabezado del Card */}
           <header className="w-full">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-3">
                 {/* Mini logo BITES */}
-                <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-neutral-800 to-neutral-950 border border-amber-500/30 flex items-center justify-center p-1 shadow-inner shadow-amber-500/10 overflow-hidden">
+                <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-neutral-800 to-neutral-950 border border-amber-500/35 flex items-center justify-center p-1.5 shadow-inner shadow-amber-500/10 overflow-hidden shrink-0">
                   <Image
                     src={`${process.env.NEXT_PUBLIC_BASE_PATH || '/bites-app-web'}/images/auth/bites-logo.png`}
                     alt="Logo BITES"
-                    width={36}
-                    height={36}
+                    width={60}
+                    height={60}
                     className="object-contain w-full h-full"
                   />
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="font-display font-bold text-lg sm:text-xl tracking-wider text-white">
+                <div className="flex items-center gap-2">
+                  <span className="font-display font-bold text-xl sm:text-2xl tracking-wider text-white">
                     BITES
                   </span>
                   <span className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest text-amber-400 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 shadow-xs">
@@ -394,16 +394,16 @@ function LoginFormContent() {
           {/* Formulario de Autenticación */}
           <form onSubmit={handleSubmit} className="space-y-4 flex flex-col justify-center">
             {/* Campo Usuario o Correo */}
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 text-left">
               <label
                 htmlFor="username"
-                className="block text-xs font-semibold uppercase tracking-wider text-neutral-300"
+                className="block text-xs font-semibold uppercase tracking-wider text-neutral-300 text-left"
               >
                 Usuario o Correo
               </label>
               <div className="relative rounded-lg shadow-xs">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-neutral-400">
-                  <User className="w-5 h-5 text-amber-400/80" />
+                <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-neutral-400">
+                  <User className="w-4 h-4 text-amber-400/80" />
                 </div>
                 <input
                   id="username"
@@ -414,17 +414,17 @@ function LoginFormContent() {
                   value={usernameOrEmail}
                   onChange={(e) => setUsernameOrEmail(e.target.value)}
                   placeholder="ejemplo@bitesfood.com o ID turno"
-                  className="block w-full pl-11 pr-4 py-3 bg-neutral-950/80 border border-neutral-700/80 rounded-xl text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition duration-150 backdrop-blur-sm"
+                  className="block w-full pl-8 pr-4 py-3 bg-neutral-950/80 border border-neutral-700/80 rounded-xl text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition duration-150 backdrop-blur-sm text-left placeholder:text-left"
                 />
               </div>
             </div>
 
             {/* Campo Contraseña con Toggle de Visibilidad */}
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 text-left">
               <div className="flex items-center justify-between">
                 <label
                   htmlFor="password"
-                  className="block text-xs font-semibold uppercase tracking-wider text-neutral-300"
+                  className="block text-xs font-semibold uppercase tracking-wider text-neutral-300 text-left"
                 >
                   Contraseña
                 </label>
@@ -437,8 +437,8 @@ function LoginFormContent() {
                 </button>
               </div>
               <div className="relative rounded-lg shadow-xs">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-neutral-400">
-                  <Lock className="w-5 h-5 text-amber-400/80" />
+                <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-neutral-400">
+                  <Lock className="w-4 h-4 text-amber-400/80" />
                 </div>
                 <input
                   id="password"
@@ -449,7 +449,7 @@ function LoginFormContent() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
-                  className="block w-full pl-11 pr-11 py-3 bg-neutral-950/80 border border-neutral-700/80 rounded-xl text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition duration-150 backdrop-blur-sm"
+                  className="block w-full pl-8 pr-11 py-3 bg-neutral-950/80 border border-neutral-700/80 rounded-xl text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition duration-150 backdrop-blur-sm text-left placeholder:text-left"
                 />
                 <button
                   type="button"
