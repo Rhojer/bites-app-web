@@ -270,7 +270,7 @@ function LoginFormContent() {
           {/* Tagline: SISTEMA DE LOGIN centrado */}
           <div className="flex items-center justify-center gap-3 mt-3 w-full">
             <span className="text-amber-500 font-black text-sm tracking-widest">▪</span>
-            <p className="font-display uppercase text-lg sm:text-2xl text-neutral-100 font-bold tracking-[0.3em] grunge-text text-center">
+            <p className="font-display uppercase text-[17px] sm:text-[23px] text-neutral-100 font-bold tracking-[0.3em] grunge-text text-center">
               SISTEMA DE LOGIN
             </p>
             <span className="text-amber-500 font-black text-sm tracking-widest">▪</span>
@@ -335,7 +335,7 @@ function LoginFormContent() {
                   />
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-display font-bold text-xl sm:text-2xl tracking-wider text-white">
+                  <span className="font-display font-bold text-[19px] sm:text-[23px] tracking-wider text-white">
                     BITES
                   </span>
                   <span className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest text-amber-400 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 shadow-xs">
@@ -357,10 +357,10 @@ function LoginFormContent() {
 
             {/* Saludo y Título del Formulario */}
             <div>
-              <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-white tracking-wide uppercase grunge-text">
+              <h1 className="text-[23px] sm:text-[29px] font-display font-extrabold text-white tracking-wide uppercase grunge-text">
                 INICIAR SESIÓN
               </h1>
-              <p className="text-xs sm:text-sm text-neutral-400 mt-1">
+              <p className="text-[11px] sm:text-[13px] text-neutral-400 mt-1">
                 Bienvenido al portal operativo de{' '}
                 <strong className="text-neutral-200 font-semibold">BITES Street Food</strong>.
               </p>
@@ -401,7 +401,7 @@ function LoginFormContent() {
             <div className="space-y-1.5 text-left">
               <label
                 htmlFor="username"
-                className="block text-xs font-semibold uppercase tracking-wider text-neutral-300 text-left"
+                className="block text-[11px] font-semibold uppercase tracking-wider text-neutral-300 text-left"
               >
                 Usuario o Correo
               </label>
@@ -418,7 +418,7 @@ function LoginFormContent() {
                   value={usernameOrEmail}
                   onChange={(e) => setUsernameOrEmail(e.target.value)}
                   placeholder="ejemplo@bitesfood.com o ID turno"
-                  className="block w-full pl-8 pr-4 py-3 bg-neutral-950/80 border border-neutral-700/80 rounded-xl text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition duration-150 backdrop-blur-sm text-left placeholder:text-left"
+                  className="block w-full pl-8 pr-4 py-3 bg-neutral-950/80 border border-neutral-700/80 rounded-xl text-[13px] text-white placeholder-neutral-500 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition duration-150 backdrop-blur-sm text-left placeholder:text-left"
                 />
               </div>
             </div>
@@ -428,14 +428,14 @@ function LoginFormContent() {
               <div className="flex items-center justify-between">
                 <label
                   htmlFor="password"
-                  className="block text-xs font-semibold uppercase tracking-wider text-neutral-300 text-left"
+                  className="block text-[11px] font-semibold uppercase tracking-wider text-neutral-300 text-left"
                 >
                   Contraseña
                 </label>
                 <button
                   type="button"
                   onClick={() => setForgotPasswordOpen(true)}
-                  className="text-xs text-amber-400 hover:text-amber-300 hover:underline transition-colors font-medium"
+                  className="text-[11px] text-amber-400 hover:text-amber-300 hover:underline transition-colors font-medium"
                 >
                   ¿Olvidaste tu clave?
                 </button>
@@ -453,7 +453,7 @@ function LoginFormContent() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
-                  className="block w-full pl-8 pr-11 py-3 bg-neutral-950/80 border border-neutral-700/80 rounded-xl text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition duration-150 backdrop-blur-sm text-left placeholder:text-left"
+                  className="block w-full pl-8 pr-11 py-3 bg-neutral-950/80 border border-neutral-700/80 rounded-xl text-[13px] text-white placeholder-neutral-500 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition duration-150 backdrop-blur-sm text-left placeholder:text-left"
                 />
                 <button
                   type="button"
@@ -478,7 +478,7 @@ function LoginFormContent() {
                   onChange={(e) => setRememberDevice(e.target.checked)}
                   className="w-4 h-4 rounded bg-neutral-950 border-neutral-700 text-amber-500 focus:ring-amber-500/30 focus:ring-offset-neutral-900 cursor-pointer"
                 />
-                <span className="text-xs text-neutral-300 group-hover:text-neutral-200 transition-colors">
+                <span className="text-[11px] text-neutral-300 group-hover:text-neutral-200 transition-colors">
                   Mantener sesión iniciada en este equipo
                 </span>
               </label>
@@ -488,7 +488,7 @@ function LoginFormContent() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 py-3.5 px-6 rounded-xl bg-gradient-to-r from-amber-500 via-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-[0.99] text-neutral-950 font-display font-black text-base uppercase tracking-wider shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 transition-all duration-200 flex items-center justify-center gap-2 group disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+              className="w-full mt-2 py-3.5 px-6 rounded-xl bg-gradient-to-r from-amber-500 via-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-[0.99] text-neutral-950 font-display font-black text-[15px] uppercase tracking-wider shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 transition-all duration-200 flex items-center justify-center gap-2 group disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
             >
               {loading ? (
                 <>
@@ -524,7 +524,7 @@ function LoginFormContent() {
                   setPinError(null)
                   setPinModalOpen(true)
                 }}
-                className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-neutral-950/80 hover:bg-neutral-900 hover:border-amber-500/50 border border-neutral-700/60 text-xs font-semibold text-neutral-300 hover:text-white transition-all shadow-xs active:scale-[0.98] cursor-pointer"
+                className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-neutral-950/80 hover:bg-neutral-900 hover:border-amber-500/50 border border-neutral-700/60 text-[11px] font-semibold text-neutral-300 hover:text-white transition-all shadow-xs active:scale-[0.98] cursor-pointer"
               >
                 <Fingerprint className="w-4 h-4 text-amber-400 shrink-0" />
                 <span className="truncate">PIN / Huella POS</span>
@@ -533,7 +533,7 @@ function LoginFormContent() {
               <button
                 type="button"
                 onClick={handleGoogleLogin}
-                className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-neutral-950/80 hover:bg-neutral-900 hover:border-neutral-500 border border-neutral-700/60 text-xs font-semibold text-neutral-300 hover:text-white transition-all shadow-xs active:scale-[0.98] cursor-pointer"
+                className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-neutral-950/80 hover:bg-neutral-900 hover:border-neutral-500 border border-neutral-700/60 text-[11px] font-semibold text-neutral-300 hover:text-white transition-all shadow-xs active:scale-[0.98] cursor-pointer"
               >
                 <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24">
                   <path
