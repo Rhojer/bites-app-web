@@ -30,7 +30,7 @@ jobs:
             git pull origin main
 
             echo "Instalando dependencias..."
-            npm install --prefer-offline --no-audit
+            npm install --prefer-offline --no-audit --legacy-peer-deps
 
             echo "Compilando proyecto Next.js..."
             npm run build
