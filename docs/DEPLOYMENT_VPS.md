@@ -125,3 +125,19 @@ npm run build
 pm2 reload bites-app-web
 echo "Despliegue completado con �xito."
 ```
+
+---
+
+## 7. Despliegue Automático con GitHub Actions (CI/CD)
+
+El repositorio incluye el flujo de trabajo en .github/workflows/deploy.yml que ejecuta el despliegue automático cada vez que haces push a la rama main.
+
+### Secretos necesarios en GitHub:
+Ve a tu repositorio en GitHub: **Settings > Secrets and variables > Actions > New repository secret** y añade:
+
+1. VPS_HOST: Dirección IP o dominio de tu servidor VPS.
+2. VPS_USERNAME: Usuario SSH (por ejemplo: oot o ubuntu).
+3. VPS_SSH_KEY: Clave privada SSH (contenido completo de tu id_rsa o id_ed25519).
+4. VPS_PORT: *(Opcional)* Puerto SSH, por defecto 22.
+
+Para permitir la conexión desde GitHub al VPS, asegúrate de que la clave pública correspondiente esté añadida en /home/<usuario>/.ssh/authorized_keys o /root/.ssh/authorized_keys.
