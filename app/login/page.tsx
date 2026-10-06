@@ -233,8 +233,8 @@ function LoginFormContent() {
         aria-label="BITES Street Food Branding"
         className="relative z-10 flex-1 flex flex-col justify-between p-6 sm:p-10 lg:p-16 xl:p-20 w-full min-h-[auto] lg:min-h-screen"
       >
-        {/* Encabezado superior de marca */}
-        <div className="flex items-center justify-between sm:justify-start gap-3 w-full">
+        {/* Encabezado superior de marca (Izquierda) */}
+        <div className="flex items-center justify-start gap-3 w-full">
           <div className="flex items-center gap-3">
             <div className="h-2 w-8 bg-gradient-to-r from-amber-400 to-amber-600 rounded-full shadow-[0_0_12px_rgba(245,158,11,0.6)]" />
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-900/90 border border-amber-500/30 backdrop-blur-md shadow-sm">
@@ -250,36 +250,40 @@ function LoginFormContent() {
         </div>
 
         {/* Centro: Logotipo de Gran Impacto y Slogan */}
-        <div className="my-auto max-w-4xl py-6 lg:py-0 text-center lg:text-left">
-          <div className="relative inline-block group">
-            <div className="absolute -inset-8 bg-gradient-to-r from-amber-500/25 via-amber-400/15 to-transparent rounded-3xl blur-3xl pointer-events-none" />
-            <div className="relative w-56 sm:w-64 md:w-72 lg:w-[340px] xl:w-[380px] h-56 sm:h-64 md:h-72 lg:h-[340px] xl:h-[380px] mx-auto lg:mx-0">
-              <Image
-                src={`${process.env.NEXT_PUBLIC_BASE_PATH || '/bites-app-web'}/images/auth/bites-logo.png`}
-                alt="BITES Logo"
-                fill
-                priority
-                className="object-contain drop-shadow-[0_20px_35px_rgba(0,0,0,0.9)] filter contrast-125 brightness-105 logo-glow"
-              />
+        <div className="my-auto max-w-xl py-6 lg:py-0 text-left w-full">
+          {/* Logo centrado */}
+          <div className="flex justify-center w-full">
+            <div className="relative inline-block group">
+              <div className="absolute -inset-8 bg-gradient-to-r from-amber-500/25 via-amber-400/15 to-transparent rounded-3xl blur-3xl pointer-events-none" />
+              <div className="relative w-44 sm:w-52 md:w-60 lg:w-[250px] xl:w-[280px] h-44 sm:h-52 md:h-60 lg:h-[250px] xl:h-[280px] mx-auto">
+                <Image
+                  src={`${process.env.NEXT_PUBLIC_BASE_PATH || '/bites-app-web'}/images/auth/bites-logo.png`}
+                  alt="BITES Logo"
+                  fill
+                  priority
+                  className="object-contain drop-shadow-[0_15px_30px_rgba(0,0,0,0.85)] filter contrast-125 brightness-105 logo-glow"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Tagline: SISTEMA DE LOGIN */}
-          <div className="flex items-center justify-center lg:justify-start gap-3 mt-3">
+          {/* Tagline: SISTEMA DE LOGIN centrado */}
+          <div className="flex items-center justify-center gap-3 mt-3 w-full">
             <span className="text-amber-500 font-black text-sm tracking-widest">▪</span>
-            <p className="font-display uppercase text-lg sm:text-2xl text-neutral-100 font-bold tracking-[0.3em] grunge-text">
+            <p className="font-display uppercase text-lg sm:text-2xl text-neutral-100 font-bold tracking-[0.3em] grunge-text text-center">
               SISTEMA DE LOGIN
             </p>
             <span className="text-amber-500 font-black text-sm tracking-widest">▪</span>
           </div>
 
-          <p className="text-neutral-300 text-xs sm:text-sm lg:text-base max-w-md mt-4 sm:mt-6 leading-relaxed lg:border-l-2 lg:border-amber-500/50 lg:pl-4 bg-gradient-to-r from-amber-500/10 to-transparent py-1.5 px-3 lg:px-4 rounded-lg">
+          {/* Descripción (Alineada a la izquierda, sin centrar) */}
+          <p className="text-neutral-300 text-xs sm:text-sm lg:text-base max-w-md mt-4 sm:mt-6 leading-relaxed lg:border-l-2 lg:border-amber-500/50 lg:pl-4 bg-gradient-to-r from-amber-500/10 to-transparent py-1.5 px-3 lg:px-4 rounded-lg text-left">
             Sistema de Operaciones, Terminal de Pedidos &amp; Punto de Venta. Ingresa con tus
             credenciales de turno asignadas.
           </p>
         </div>
 
-        {/* Chips de Estado en Tiempo Real (Inferior) */}
+        {/* Chips de Estado en Tiempo Real (Inferior, alineados a la izquierda en desktop) */}
         <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 sm:gap-6 pt-6 border-t border-neutral-800/80 text-xs text-neutral-400">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-neutral-900/80 border border-neutral-800 backdrop-blur-sm shadow-xs">
             <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse" />
@@ -291,7 +295,7 @@ function LoginFormContent() {
           <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-900/60 border border-neutral-800/60 text-neutral-300 text-[11px] sm:text-xs">
             <MapPin className="size-3.5 text-amber-400" />
             <span className="text-neutral-400">Sucursal:</span>
-            <span className="text-amber-400 font-bold tracking-wide">24 DE JULIO</span>
+            <span className="text-amber-400 font-bold tracking-wide">BOMBA BRISAS DEL ISIRO</span>
           </div>
           <div className="hidden lg:block text-neutral-700">•</div>
           <div className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-900/60 border border-neutral-800/60 text-neutral-400 text-[11px]">
@@ -666,7 +670,7 @@ function LoginFormContent() {
               </span>
               <p className="text-neutral-200">
                 Para alta de nuevos colaboradores o reseteo de claves de caja, solicita al Gerente o
-                Supervisor de guardia en la sucursal <strong>24 DE JULIO</strong>.
+                Supervisor de guardia en la sucursal <strong>BOMBA BRISAS DEL ISIRO</strong>.
               </p>
             </div>
 

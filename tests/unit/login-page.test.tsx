@@ -73,7 +73,7 @@ describe('LoginPage - Vista de Autenticación BITES Street Food', () => {
     expect(screen.getByRole('button', { name: /Google Work/i })).toBeInTheDocument()
 
     // Chips y Footer de estado
-    expect(screen.getByText(/24 DE JULIO/i)).toBeInTheDocument()
+    expect(screen.getByText(/BOMBA BRISAS DEL ISIRO/i)).toBeInTheDocument()
     expect(screen.getByText(/BITES Hub v2.4/i)).toBeInTheDocument()
     expect(screen.getByText(/SSL Activo/i)).toBeInTheDocument()
   })
