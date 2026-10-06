@@ -4,19 +4,13 @@ import type { Database } from '@/types/database'
 
 export async function createClient() {
   const cookieStore = await cookies()
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://uqvdopbegosjggkxamoo.supabase.co'
+  const supabaseKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxdmRvcGJlZ29zamdna3hhbW9vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNjE1MTksImV4cCI6MjEwMjczNzUxOX0.6QwwCBOp711RUakYcEHFofpwF9AFnNNHyEa8GGEJSHk'
 
-  if (!supabaseUrl || !supabaseKey) {
-    console.warn(
-      'Supabase credentials missing. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your .env.local file.'
-    )
-  }
-
-  return createServerClient<Database>(
-    supabaseUrl || 'https://placeholder.supabase.co',
-    supabaseKey || 'placeholder-anon-key',
-    {
+  return createServerClient<Database>(supabaseUrl, supabaseKey, {
       cookies: {
         getAll() {
           return cookieStore.getAll()

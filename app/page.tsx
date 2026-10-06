@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 import { AdminShell } from '@/components/layout/admin-shell'
 import { Navbar } from '@/components/layout/navbar'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
@@ -24,7 +26,17 @@ import {
 import { SavingsTargetsCard } from '@/components/finances/savings-targets-card'
 
 export default async function DashboardPage() {
+  const cookieStore = await cookies()
+  const hasPosSession = cookieStore.get('bites_pos_session')?.value === 'active'
+
   const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user && !hasPosSession) {
+    redirect('/login')
+  }
 
   // Consultar datos reales de la base de datos
   const [

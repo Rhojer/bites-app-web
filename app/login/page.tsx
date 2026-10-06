@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -39,6 +39,18 @@ function LoginFormContent() {
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+
+  // Cargar usuario recordado previamente en este dispositivo
+  useEffect(() => {
+    try {
+      const savedUser = localStorage.getItem('bites_saved_username')
+      if (savedUser) {
+        setUsernameOrEmail(savedUser)
+      }
+    } catch {
+      // Ignorar en entornos sin localStorage
+    }
+  }, [])
 
   // Modals state
   const [helpOpen, setHelpOpen] = useState(false)
@@ -86,6 +98,16 @@ function LoginFormContent() {
       }
 
       if (data.session) {
+        try {
+          if (rememberDevice) {
+            localStorage.setItem('bites_saved_username', trimmedIdentifier)
+          } else {
+            localStorage.removeItem('bites_saved_username')
+          }
+        } catch {
+          // Ignorado si localStorage no está disponible
+        }
+
         setSuccessMessage('¡Acceso concedido! Entrando al sistema...')
         setTimeout(() => {
           router.push(redirectUrl)
@@ -151,7 +173,7 @@ function LoginFormContent() {
       // PINS rápidos de prueba permitidos para turnos de demostración / cajero
       if (['1234', '0000', '2407', '8888'].includes(pin)) {
         if (typeof document !== 'undefined') {
-          document.cookie = 'bites_pos_session=active; path=/; max-age=86400; SameSite=Lax'
+          document.cookie = 'bites_pos_session=active; path=/; max-age=2592000; SameSite=Lax'
         }
         setPinLoading(false)
         setPinModalOpen(false)
@@ -176,7 +198,7 @@ function LoginFormContent() {
       {/* Fondo de fotografía de street food y texturas */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden select-none z-0">
         <Image
-          src="/images/auth/login-bg.webp"
+          src={`${process.env.NEXT_PUBLIC_BASE_PATH || '/bites-app-web'}/images/auth/login-bg.webp`}
           alt="Bites Street Food Atmosphere Background"
           fill
           priority
@@ -233,7 +255,7 @@ function LoginFormContent() {
             <div className="absolute -inset-4 bg-gradient-to-r from-amber-500/15 via-amber-400/10 to-transparent rounded-3xl blur-2xl pointer-events-none" />
             <div className="relative w-56 sm:w-72 lg:w-96 h-28 sm:h-36 lg:h-44 mx-auto lg:mx-0">
               <Image
-                src="/images/auth/bites-logo.png"
+                src={`${process.env.NEXT_PUBLIC_BASE_PATH || '/bites-app-web'}/images/auth/bites-logo.png`}
                 alt="BITES Street Food Logo"
                 fill
                 priority
