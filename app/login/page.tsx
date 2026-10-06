@@ -27,7 +27,10 @@ import { Button } from '@/components/ui/button'
 function LoginFormContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectUrl = searchParams.get('redirect') || searchParams.get('next') || '/'
+  const rawRedirect = searchParams.get('redirect') || searchParams.get('next') || '/'
+  const redirectUrl = (rawRedirect === '/bites-app-web' || rawRedirect === '/bites-app-web/')
+    ? '/'
+    : rawRedirect.replace(/^\/bites-app-web/, '') || '/'
 
   const [usernameOrEmail, setUsernameOrEmail] = useState('')
   const [password, setPassword] = useState('')

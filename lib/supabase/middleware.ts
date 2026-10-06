@@ -42,32 +42,38 @@ export async function updateSession(request: NextRequest) {
   const hasPosSession = request.cookies.get('bites_pos_session')?.value === 'active'
   const isAuthenticated = Boolean(user || hasPosSession)
 
+  // Normalizar el pathname removiendo un posible prefijo de subpath como /bites-app-web
+  const cleanPath = pathname.replace(/^\/bites-app-web/, '') || '/'
+
   // Rutas públicas que no deben ser redirigidas a login
   const isPublic =
-    pathname === '/login' ||
-    pathname.startsWith('/auth') ||
-    pathname.startsWith('/api') ||
-    pathname.startsWith('/images') ||
-    pathname === '/favicon.ico' ||
-    pathname === '/manifest.json' ||
-    pathname === '/sw.js' ||
-    pathname.endsWith('.json') ||
-    pathname.endsWith('.js')
+    cleanPath === '/login' ||
+    cleanPath.startsWith('/auth') ||
+    cleanPath.startsWith('/api') ||
+    cleanPath.startsWith('/images') ||
+    cleanPath === '/favicon.ico' ||
+    cleanPath === '/manifest.json' ||
+    cleanPath === '/sw.js' ||
+    cleanPath.endsWith('.json') ||
+    cleanPath.endsWith('.js')
 
   // Si no está autenticado y trata de entrar a cualquier página protegida, redirige de una a /login
   if (!isAuthenticated && !isPublic) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
-    if (pathname !== '/') {
-      url.searchParams.set('redirect', pathname)
+    if (cleanPath !== '/') {
+      url.searchParams.set('redirect', cleanPath)
+    } else {
+      url.searchParams.delete('redirect')
     }
     return NextResponse.redirect(url)
   }
 
   // Si ya está autenticado y trata de entrar a /login, redirige al inicio /
-  if (isAuthenticated && pathname === '/login') {
+  if (isAuthenticated && cleanPath === '/login') {
     const url = request.nextUrl.clone()
     url.pathname = '/'
+    url.searchParams.delete('redirect')
     return NextResponse.redirect(url)
   }
 
