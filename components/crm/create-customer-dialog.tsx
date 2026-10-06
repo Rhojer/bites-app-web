@@ -133,28 +133,7 @@ export function CreateCustomerDialog({ onCustomerCreated }: { onCustomerCreated?
               />
             </div>
 
-            <div className="p-3 bg-muted/40 rounded-xl border space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="credit_limit" className="font-semibold text-foreground flex items-center gap-1.5">
-                  <DollarSign className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-                  <span>Límite de Crédito Inicial ($)</span>
-                </Label>
-                <span className="text-[11px] text-muted-foreground">Cuenta Corriente</span>
-              </div>
-              <Input
-                id="credit_limit"
-                name="credit_limit"
-                type="number"
-                min="0"
-                step="0.01"
-                defaultValue="0"
-                className="text-xs h-9 bg-background"
-                placeholder="0.00"
-              />
-              <p className="text-[11px] text-muted-foreground">
-                Permite al cliente acumular consumo y pagar al corte de mes o semana.
-              </p>
-            </div>
+            <input type="hidden" name="credit_limit" value="0" />
           </div>
 
           <DialogFooter>

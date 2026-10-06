@@ -28,9 +28,9 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  basePath: '/bites-app-web',
+  basePath: process.env.NEXT_BASE_PATH || undefined,
   env: {
-    NEXT_PUBLIC_BASE_PATH: '/bites-app-web',
+    NEXT_PUBLIC_BASE_PATH: process.env.NEXT_BASE_PATH || '',
   },
   async headers() {
     return [

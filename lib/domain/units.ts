@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Motor de Unidades de Medida y Conversión Gastronómica
  * Soporta conversión segura entre familias de medida:
  * - Masa: kg <-> gr (1 kg = 1000 gr)
@@ -20,6 +20,7 @@ export const SUPPORTED_UNITS: Record<string, UnitDefinition> = {
   kg: { code: 'kg', label: 'Kilogramos (kg)', family: 'mass', toBaseFactor: 1000 },
   gr: { code: 'gr', label: 'Gramos (gr)', family: 'mass', toBaseFactor: 1 },
   g: { code: 'gr', label: 'Gramos (gr)', family: 'mass', toBaseFactor: 1 },
+  mg: { code: 'mg', label: 'Miligramos (mg)', family: 'mass', toBaseFactor: 0.001 },
 
   // Volumen (Base: ml)
   lt: { code: 'lt', label: 'Litros (lt)', family: 'volume', toBaseFactor: 1000 },
@@ -147,5 +148,88 @@ export function checkRecipeQuantitySanity(
   }
 
   return { isSane: true }
+}
+
+/**
+ * Calcula el costo promedio ponderado (PMP / Weighted Average Cost)
+ * ante una nueva compra o carga de inventario.
+ */
+export function calculateWeightedAverageCost(
+  currentStock: number,
+  currentCost: number,
+  newQuantity: number,
+  newCost: number
+): number {
+  if (newQuantity <= 0) return currentCost
+  if (currentStock <= 0) return Number(newCost.toFixed(6))
+  
+  const totalExistingValue = currentStock * currentCost
+  const totalNewValue = newQuantity * newCost
+  const totalCombinedStock = currentStock + newQuantity
+
+  if (totalCombinedStock <= 0) return 0
+  return Number(((totalExistingValue + totalNewValue) / totalCombinedStock).toFixed(6))
+}
+
+export type InventoryDisplayMode = 'macro' | 'micro' // macro: kg / lt, micro: gr / ml
+
+export interface DisplayStockResult {
+  stock: number
+  minStock: number
+  costPerUnit: number
+  unit: string
+}
+
+/**
+ * Convierte el stock, stock mínimo y costo unitario según el modo de visualización:
+ * - 'macro': Masa en kg, Volumen en lt
+ * - 'micro': Masa en gr, Volumen en ml
+ * - Otras familias (ej. unidades, porciones): se mantienen intactas
+ */
+export function getDisplayStockAndCost(
+  stock: number,
+  costPerUnit: number,
+  minStock: number,
+  unit: string,
+  mode: InventoryDisplayMode
+): DisplayStockResult {
+  const norm = normalizeUnitCode(unit)
+  const def = SUPPORTED_UNITS[norm]
+
+  if (!def || def.family === 'count') {
+    return {
+      stock,
+      minStock,
+      costPerUnit,
+      unit: unit || 'und'
+    }
+  }
+
+  let targetUnit = norm
+  if (def.family === 'mass') {
+    targetUnit = mode === 'macro' ? 'kg' : 'gr'
+  } else if (def.family === 'volume') {
+    targetUnit = mode === 'macro' ? 'lt' : 'ml'
+  }
+
+  if (targetUnit === norm) {
+    return {
+      stock,
+      minStock,
+      costPerUnit,
+      unit: targetUnit
+    }
+  }
+
+  const convertedStock = convertUnitQuantity(stock, norm, targetUnit)
+  const convertedMinStock = convertUnitQuantity(minStock, norm, targetUnit)
+  const convertedCost = calculateNormalizedUnitCost(costPerUnit, norm, targetUnit)
+
+  return {
+    stock: convertedStock,
+    minStock: convertedMinStock,
+    costPerUnit: convertedCost,
+    unit: targetUnit
+  }
 }
 

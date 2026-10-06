@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { sanitizeText } from '@/lib/security'
+import { calculateWeightedAverageCost } from '@/lib/domain/units'
 
 export async function createIngredientAction(formData: FormData) {
   const supabase = await createClient()
@@ -62,6 +63,8 @@ export async function registerMovementAction(formData: FormData) {
   const type = formData.get('type') as string // 'purchase' | 'waste' | 'adjustment'
   const quantity = parseFloat(formData.get('quantity') as string) || 0
   const reason = sanitizeText(formData.get('reason') as string) || ''
+  const purchaseUnitCostRaw = formData.get('purchase_unit_cost') as string | null
+  const purchaseTotalCostRaw = formData.get('purchase_total_cost') as string | null
 
   if (!ingredient_id || quantity <= 0) {
     throw new Error('Insumo y cantidad válida son requeridos.')
@@ -78,13 +81,34 @@ export async function registerMovementAction(formData: FormData) {
     throw new Error('Insumo no encontrado.')
   }
 
-  // Calcular nuevo stock
+  // Calcular nuevo stock y costo
   let stockDelta = quantity
+  let effectiveUnitCost = ingredient.cost_per_unit
+  let newCostPerUnit = ingredient.cost_per_unit
+
   if (type === 'waste') {
     stockDelta = -quantity // Las mermas restan
   } else if (type === 'adjustment') {
     // Si es ajuste, podemos indicar la diferencia directamente
     stockDelta = -quantity
+  } else if (type === 'purchase') {
+    // Es una entrada/compra: calcular costo unitario efectivo de esta compra
+    const parsedUnitCost = purchaseUnitCostRaw !== null && purchaseUnitCostRaw !== '' ? parseFloat(purchaseUnitCostRaw) : NaN
+    const parsedTotalCost = purchaseTotalCostRaw !== null && purchaseTotalCostRaw !== '' ? parseFloat(purchaseTotalCostRaw) : NaN
+
+    if (!isNaN(parsedUnitCost) && parsedUnitCost >= 0) {
+      effectiveUnitCost = parsedUnitCost
+    } else if (!isNaN(parsedTotalCost) && parsedTotalCost >= 0 && quantity > 0) {
+      effectiveUnitCost = Number((parsedTotalCost / quantity).toFixed(6))
+    }
+
+    // Calcular costo promedio ponderado (PMP)
+    newCostPerUnit = calculateWeightedAverageCost(
+      ingredient.current_stock,
+      ingredient.cost_per_unit,
+      quantity,
+      effectiveUnitCost
+    )
   }
 
   const newStock = Math.max(0, ingredient.current_stock + stockDelta)
@@ -92,7 +116,10 @@ export async function registerMovementAction(formData: FormData) {
   // Actualizar tabla ingredients
   await supabase
     .from('ingredients')
-    .update({ current_stock: newStock })
+    .update({
+      current_stock: newStock,
+      cost_per_unit: newCostPerUnit,
+    })
     .eq('id', ingredient_id)
 
   // Registrar trazabilidad en inventory_movements
@@ -100,8 +127,8 @@ export async function registerMovementAction(formData: FormData) {
     ingredient_id,
     type,
     quantity: stockDelta,
-    unit_cost: ingredient.cost_per_unit,
-    reason: reason || (type === 'waste' ? 'Merma registrada' : 'Entrada de mercancía')
+    unit_cost: effectiveUnitCost,
+    reason: reason || (type === 'waste' ? 'Merma registrada' : 'Entrada de mercancía'),
   })
 
   revalidatePath('/inventory')
