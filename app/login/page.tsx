@@ -243,20 +243,20 @@ function LoginFormContent() {
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
               </span>
               <span className="text-[10px] sm:text-[11px] uppercase tracking-[0.22em] text-amber-300 font-bold">
-                Street Kitchen • Flagship Hub
+                FAST FOOD, REAL GOOD
               </span>
             </div>
           </div>
         </div>
 
         {/* Centro: Logotipo de Gran Impacto y Slogan */}
-        <div className="my-auto max-w-xl py-6 lg:py-0 text-center lg:text-left">
+        <div className="my-auto max-w-2xl py-6 lg:py-0 text-center lg:text-left">
           <div className="relative inline-block group">
             <div className="absolute -inset-4 bg-gradient-to-r from-amber-500/15 via-amber-400/10 to-transparent rounded-3xl blur-2xl pointer-events-none" />
-            <div className="relative w-56 sm:w-72 lg:w-96 h-28 sm:h-36 lg:h-44 mx-auto lg:mx-0">
+            <div className="relative w-72 sm:w-96 lg:w-[460px] xl:w-[520px] h-36 sm:h-48 lg:h-56 xl:h-64 mx-auto lg:mx-0">
               <Image
                 src={`${process.env.NEXT_PUBLIC_BASE_PATH || '/bites-app-web'}/images/auth/bites-logo.png`}
-                alt="BITES Street Food Logo"
+                alt="BITES Logo"
                 fill
                 priority
                 className="object-contain drop-shadow-[0_20px_35px_rgba(0,0,0,0.85)] filter contrast-125 brightness-105 logo-glow"
@@ -264,11 +264,11 @@ function LoginFormContent() {
             </div>
           </div>
 
-          {/* Tagline: STREET FOOD */}
+          {/* Tagline: SISTEMA DE LOGIN */}
           <div className="flex items-center justify-center lg:justify-start gap-3 mt-3">
             <span className="text-amber-500 font-black text-sm tracking-widest">▪</span>
             <p className="font-display uppercase text-lg sm:text-2xl text-neutral-100 font-bold tracking-[0.3em] grunge-text">
-              STREET FOOD
+              SISTEMA DE LOGIN
             </p>
             <span className="text-amber-500 font-black text-sm tracking-widest">▪</span>
           </div>
@@ -320,13 +320,15 @@ function LoginFormContent() {
           <header className="w-full">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2.5">
-                {/* Mini icono hamburguesa estilo BITES */}
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-neutral-800 to-neutral-950 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-inner shadow-amber-500/10">
-                  <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 100 80">
-                    <path d="M10 32 C15 10, 85 10, 90 32 Z" />
-                    <rect height="12" rx="4" width="80" x="10" y="38" />
-                    <path d="M12 56 C20 72, 80 72, 88 56 Z" />
-                  </svg>
+                {/* Mini logo BITES */}
+                <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-neutral-800 to-neutral-950 border border-amber-500/30 flex items-center justify-center p-1 shadow-inner shadow-amber-500/10 overflow-hidden">
+                  <Image
+                    src={`${process.env.NEXT_PUBLIC_BASE_PATH || '/bites-app-web'}/images/auth/bites-logo.png`}
+                    alt="Logo BITES"
+                    width={36}
+                    height={36}
+                    className="object-contain w-full h-full"
+                  />
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="font-display font-bold text-lg sm:text-xl tracking-wider text-white">

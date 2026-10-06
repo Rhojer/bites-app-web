@@ -90,7 +90,9 @@ export async function processOrderAction(data: {
       type: data.type || 'dine_in',
       table_id: data.table_id || null,
       user_id: validUserId,
+      customer_id: validUserId,
       customer_name: sanitizedCustomerName || (data.table_id ? 'Mesa Salón' : 'Cliente Mostrador'),
+      customer_phone: sanitizedPhone || null,
       status: orderStatus,
       payment_status: paymentStatus,
       kitchen_status: kitchenStatus,
@@ -152,8 +154,8 @@ export async function processOrderAction(data: {
     })
   }
 
-  // 4. Si es venta a crédito y hay cliente registrado, incrementar su deuda en profiles
-  if (isCredit && data.customer_id) {
+  // 4. Si la orden está pagada o es a crédito, y hay cliente registrado, actualizar estadísticas (consumo, visitas, deuda)
+  if ((isPaid || isCredit) && data.customer_id) {
     const { data: cust } = await supabase
       .from('profiles')
       .select('id, current_debt, total_spent, total_orders_count')
@@ -168,7 +170,7 @@ export async function processOrderAction(data: {
       await supabase
         .from('profiles')
         .update({
-          current_debt: currentDebt + calculatedTotal,
+          current_debt: isCredit ? currentDebt + calculatedTotal : currentDebt,
           total_spent: totalSpent + calculatedTotal,
           total_orders_count: ordersCount + 1,
         })
@@ -328,6 +330,7 @@ export async function payActiveOrderAction(params: {
       payment_status: isCredit ? 'credit' : 'paid',
       status: 'completed',
       user_id: validUserId,
+      customer_id: validUserId,
       updated_at: new Date().toISOString(),
     })
     .eq('id', params.orderId)
@@ -336,8 +339,8 @@ export async function payActiveOrderAction(params: {
     throw new Error(`Error al marcar orden como cobrada/crédito: ${ordErr.message}`)
   }
 
-  // Si se cobra a crédito, incrementar deuda del cliente en profiles
-  if (isCredit && params.customerId) {
+  // Actualizar estadísticas del cliente en profiles (consumo, visitas y deuda si aplica)
+  if (params.customerId) {
     const { data: cust } = await supabase
       .from('profiles')
       .select('id, current_debt, total_spent, total_orders_count')
@@ -352,7 +355,7 @@ export async function payActiveOrderAction(params: {
       await supabase
         .from('profiles')
         .update({
-          current_debt: currentDebt + params.total,
+          current_debt: isCredit ? currentDebt + params.total : currentDebt,
           total_spent: totalSpent + params.total,
           total_orders_count: ordersCount + 1,
         })

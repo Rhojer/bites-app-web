@@ -59,8 +59,8 @@ describe('LoginPage - Vista de Autenticación BITES Street Food', () => {
 
     // Elementos de marca BITES y badges
     expect(screen.getByText(/STAFF POS/i)).toBeInTheDocument()
-    expect(screen.getAllByText(/Street Kitchen • Flagship Hub/i).length).toBeGreaterThanOrEqual(1)
-    expect(screen.getAllByText(/STREET FOOD/i).length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText(/FAST FOOD, REAL GOOD/i).length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText(/SISTEMA DE LOGIN/i).length).toBeGreaterThanOrEqual(1)
 
     // Campos del formulario
     expect(screen.getByLabelText(/Usuario o Correo/i)).toBeInTheDocument()
