@@ -10,13 +10,17 @@ import { Boxes, AlertTriangle, DollarSign, ArrowDownRight, Layers } from 'lucide
 export default async function InventoryPage() {
   const supabase = await createClient()
 
-  // Consultar insumos
-  const { data: ingredientsData, error } = await supabase
-    .from('ingredients')
-    .select('*')
-    .order('name', { ascending: true })
+  // Consultar insumos y proveedores en paralelo
+  const [
+    { data: ingredientsData },
+    { data: suppliersData },
+  ] = await Promise.all([
+    supabase.from('ingredients').select('*').order('name', { ascending: true }),
+    supabase.from('suppliers').select('*').order('name', { ascending: true }),
+  ])
 
   const ingredients = ingredientsData || []
+  const suppliers = suppliersData || []
 
   // Calcular métricas
   const totalItems = ingredients.length
@@ -31,8 +35,8 @@ export default async function InventoryPage() {
         description="Existencias en despensa, alertas de stock bajo y registro de mermas"
         actions={
           <div className="flex items-center gap-2">
-            <RecordWasteDialog ingredients={ingredients} />
-            <CreateIngredientDialog />
+            <RecordWasteDialog ingredients={ingredients} suppliers={suppliers} />
+            <CreateIngredientDialog suppliers={suppliers} />
           </div>
         }
       />
@@ -98,7 +102,7 @@ export default async function InventoryPage() {
         </div>
 
         {/* Tabla de Insumos */}
-        <IngredientsTable ingredients={ingredients} />
+        <IngredientsTable ingredients={ingredients} suppliers={suppliers} />
       </main>
     </AdminShell>
   )

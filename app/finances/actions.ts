@@ -180,3 +180,95 @@ export async function deleteBillAction(billId: string) {
   revalidatePath('/')
   return { success: true }
 }
+
+export async function createSupplierAction(formData: FormData) {
+  const supabase = await createClient()
+
+  const name = sanitizeText(formData.get('name') as string)
+  const contact_name = sanitizeText(formData.get('contact_name') as string) || null
+  const phone = sanitizeText(formData.get('phone') as string) || null
+  const email = sanitizeText(formData.get('email') as string) || null
+  const tax_id = sanitizeText(formData.get('tax_id') as string) || null
+  const creditDaysRaw = formData.get('credit_days') as string
+  const credit_days = creditDaysRaw !== null && creditDaysRaw !== '' ? parseInt(creditDaysRaw, 10) : 15
+  const notes = sanitizeText(formData.get('notes') as string) || null
+
+  if (!name) {
+    throw new Error('El nombre de la empresa o proveedor es obligatorio.')
+  }
+
+  const { data, error } = await supabase
+    .from('suppliers')
+    .insert({
+      name,
+      contact_name,
+      phone,
+      email,
+      tax_id,
+      credit_days: isNaN(credit_days) ? 15 : credit_days,
+      notes,
+    })
+    .select('*')
+    .single()
+
+  if (error) {
+    console.error('Error al registrar proveedor:', error.message)
+    throw new Error(`Error al registrar proveedor: ${error.message}`)
+  }
+
+  revalidatePath('/finances')
+  revalidatePath('/inventory')
+  return { success: true, supplier: data }
+}
+
+export async function deleteSupplierAction(supplierId: string) {
+  const supabase = await createClient()
+
+  if (!supplierId) {
+    throw new Error('ID de proveedor requerido.')
+  }
+
+  // 1. Verificar si el proveedor existe
+  const { data: supplier, error: fetchErr } = await supabase
+    .from('suppliers')
+    .select('id, name')
+    .eq('id', supplierId)
+    .single()
+
+  if (fetchErr || !supplier) {
+    throw new Error('Proveedor no encontrado.')
+  }
+
+  // 2. Verificar si tiene facturas pendientes o históricas asociadas
+  const { data: bills } = await supabase
+    .from('bills_payable')
+    .select('id')
+    .eq('supplier_id', supplierId)
+
+  if (bills && bills.length > 0) {
+    throw new Error(
+      `No se puede eliminar a "${supplier.name}" porque tiene ${bills.length} factura(s) registrada(s). Elimina o reasigna las facturas primero.`
+    )
+  }
+
+  // 3. Desvincular insumos que tengan este proveedor asignado
+  await supabase
+    .from('ingredients')
+    .update({ supplier_id: null })
+    .eq('supplier_id', supplierId)
+
+  // 4. Eliminar el proveedor
+  const { error: delErr } = await supabase
+    .from('suppliers')
+    .delete()
+    .eq('id', supplierId)
+
+  if (delErr) {
+    throw new Error(`Error al eliminar proveedor: ${delErr.message}`)
+  }
+
+  revalidatePath('/finances')
+  revalidatePath('/inventory')
+  return { success: true }
+}
+

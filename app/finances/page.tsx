@@ -9,7 +9,9 @@ import { CreateExpenseDialog } from '@/components/finances/create-expense-dialog
 import { PaymentReconciliation, PaymentMethodItem, PaymentTransaction } from '@/components/finances/payment-reconciliation'
 import { ExpensesTable, ExpenseItem } from '@/components/finances/expenses-table'
 import { SavingsTargetsCard } from '@/components/finances/savings-targets-card'
-import { TrendingDown, FileText, CreditCard, FileSpreadsheet, Plus } from 'lucide-react'
+import { SuppliersTable } from '@/components/finances/suppliers-table'
+import { CreateSupplierDialog } from '@/components/finances/create-supplier-dialog'
+import { TrendingDown, FileText, CreditCard, FileSpreadsheet, Building2, Plus } from 'lucide-react'
 
 export default async function FinancesPage() {
   const supabase = await createClient()
@@ -150,6 +152,7 @@ export default async function FinancesPage() {
           <div className="flex items-center gap-2">
             <CreateExpenseDialog />
             <CreateBillDialog suppliers={suppliers} />
+            <CreateSupplierDialog />
           </div>
         }
       />
@@ -163,7 +166,7 @@ export default async function FinancesPage() {
         />
 
         <Tabs defaultValue="pl" className="w-full space-y-6">
-          <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full max-w-2xl">
+          <TabsList className="grid grid-cols-2 sm:grid-cols-5 w-full max-w-3xl">
             <TabsTrigger value="pl" className="gap-1.5 text-xs">
               <TrendingDown className="size-3.5" />
               <span>Estado P&L</span>
@@ -171,6 +174,10 @@ export default async function FinancesPage() {
             <TabsTrigger value="bills" className="gap-1.5 text-xs">
               <FileText className="size-3.5" />
               <span>Cuentas por Pagar</span>
+            </TabsTrigger>
+            <TabsTrigger value="suppliers" className="gap-1.5 text-xs">
+              <Building2 className="size-3.5" />
+              <span>Proveedores</span>
             </TabsTrigger>
             <TabsTrigger value="reconciliation" className="gap-1.5 text-xs">
               <CreditCard className="size-3.5" />
@@ -192,7 +199,12 @@ export default async function FinancesPage() {
             <BillsPayableTable bills={bills} />
           </TabsContent>
 
-          {/* TAB 3: CONCILIACIÓN DE MÉTODOS DE PAGO */}
+          {/* TAB 3: GESTIÓN DE PROVEEDORES */}
+          <TabsContent value="suppliers" className="space-y-6">
+            <SuppliersTable suppliers={suppliers} bills={bills} />
+          </TabsContent>
+
+          {/* TAB 4: CONCILIACIÓN DE MÉTODOS DE PAGO */}
           <TabsContent value="reconciliation" className="space-y-6">
             <PaymentReconciliation
               paymentMethods={paymentMethods}
@@ -200,7 +212,7 @@ export default async function FinancesPage() {
             />
           </TabsContent>
 
-          {/* TAB 4: HISTORIAL DE GASTOS OPERATIVOS */}
+          {/* TAB 5: HISTORIAL DE GASTOS OPERATIVOS */}
           <TabsContent value="expenses" className="space-y-6">
             <ExpensesTable expenses={expenses} />
           </TabsContent>

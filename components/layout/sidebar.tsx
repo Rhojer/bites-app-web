@@ -1,7 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard,
   Boxes,
@@ -11,13 +12,14 @@ import {
   TrendingDown,
   Users,
   Settings,
-  Sparkles,
-  ChevronRight,
-  AlertCircle,
   ChefHat,
-  Receipt
+  Receipt,
+  LogOut,
+  Loader2
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { createClient } from '@/lib/supabase/client'
 
 export const navigationItems = [
   {
@@ -74,6 +76,32 @@ export const navigationItems = [
 
 export function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
   const pathname = usePathname()
+  const router = useRouter()
+  const [loggingOut, setLoggingOut] = useState(false)
+
+  const handleLogout = async () => {
+    try {
+      setLoggingOut(true)
+      if (typeof document !== 'undefined') {
+        document.cookie = 'bites_pos_session=; path=/; max-age=0'
+      }
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      if (onItemClick) {
+        onItemClick()
+      }
+      router.push('/login')
+      router.refresh()
+    } catch (err) {
+      console.error('Error cerrando sesión:', err)
+      if (onItemClick) {
+        onItemClick()
+      }
+      router.push('/login')
+    } finally {
+      setLoggingOut(false)
+    }
+  }
 
   return (
     <div className="flex flex-col h-full bg-card">
@@ -120,15 +148,43 @@ export function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
         })}
       </nav>
 
-      {/* Footer Status */}
-      <div className="p-3.5 border-t bg-muted/20 m-3 rounded-2xl space-y-1.5 shrink-0">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground font-medium flex items-center gap-2">
-            <span className="size-2.5 rounded-full bg-emerald-500 animate-pulse" />
+      {/* Footer: Administrador + Cerrar Sesión + Estado del Sistema */}
+      <div className="p-3 border-t bg-card space-y-2.5 shrink-0 mt-auto">
+        {/* Usuario info */}
+        <div className="flex items-center gap-3 px-2 py-1.5 rounded-xl bg-muted/40 border border-border/50">
+          <div className="size-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
+            AD
+          </div>
+          <div className="flex-1 min-w-0 text-left">
+            <p className="text-xs font-semibold text-foreground truncate">Administrador</p>
+            <p className="text-[11px] text-muted-foreground truncate">Admin General</p>
+          </div>
+        </div>
+
+        {/* Botón Cerrar Sesión */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleLogout}
+          disabled={loggingOut}
+          className="w-full justify-start gap-2.5 text-xs font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30 transition-colors cursor-pointer"
+        >
+          {loggingOut ? (
+            <Loader2 className="size-4 animate-spin text-destructive shrink-0" />
+          ) : (
+            <LogOut className="size-4 shrink-0 text-muted-foreground group-hover:text-destructive" />
+          )}
+          <span>{loggingOut ? 'Cerrando sesión...' : 'Cerrar Sesión'}</span>
+        </Button>
+
+        {/* Estado del Sistema */}
+        <div className="px-2 pt-0.5 flex items-center justify-between text-[11px] text-muted-foreground">
+          <span className="flex items-center gap-1.5 font-medium">
+            <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
             Sistema en línea
           </span>
+          <span className="text-[10px] text-muted-foreground/60">v1.0</span>
         </div>
-        <p className="text-xs text-muted-foreground leading-snug">Datos actualizados al momento.</p>
       </div>
     </div>
   )

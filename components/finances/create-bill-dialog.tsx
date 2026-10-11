@@ -16,6 +16,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { createBillAction } from '@/app/finances/actions'
 
+import { CreateSupplierDialog } from './create-supplier-dialog'
+
 interface SupplierOption {
   id: string
   name: string
@@ -27,15 +29,36 @@ interface CreateBillDialogProps {
   suppliers: SupplierOption[]
 }
 
-export function CreateBillDialog({ suppliers }: CreateBillDialogProps) {
+export function CreateBillDialog({ suppliers: initialSuppliers }: CreateBillDialogProps) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [suppliers, setSuppliers] = useState<SupplierOption[]>(initialSuppliers)
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string>('')
 
   // Default due date: today + 15 days
-  const defaultDueDate = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .split('T')[0]
+  const [dueDate, setDueDate] = useState<string>(
+    new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  )
+
+  function handleSupplierChange(supplierId: string) {
+    setSelectedSupplierId(supplierId)
+    const sup = suppliers.find((s) => s.id === supplierId)
+    if (sup && sup.credit_days) {
+      const days = sup.credit_days
+      const newDue = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      setDueDate(newDue)
+    }
+  }
+
+  function handleSupplierCreated(newSup: { id: string; name: string; credit_days?: number | null }) {
+    setSuppliers((prev) => [...prev, newSup])
+    setSelectedSupplierId(newSup.id)
+    if (newSup.credit_days) {
+      const newDue = new Date(Date.now() + newSup.credit_days * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      setDueDate(newDue)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -83,28 +106,53 @@ export function CreateBillDialog({ suppliers }: CreateBillDialogProps) {
 
           <div className="space-y-4 py-4 text-xs">
             <div className="space-y-1.5">
-              <Label htmlFor="supplier_id">Proveedor *</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="supplier_id">Proveedor *</Label>
+                <CreateSupplierDialog
+                  onSuccess={handleSupplierCreated}
+                  trigger={
+                    <button
+                      type="button"
+                      className="text-[11px] text-primary hover:underline font-medium flex items-center gap-1"
+                    >
+                      <Plus className="size-3" />
+                      <span>+ Crear nuevo proveedor</span>
+                    </button>
+                  }
+                />
+              </div>
               {suppliers.length > 0 ? (
                 <select
                   id="supplier_id"
                   name="supplier_id"
                   required
+                  value={selectedSupplierId}
+                  onChange={(e) => handleSupplierChange(e.target.value)}
                   className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
-                  <option value="" disabled selected>
+                  <option value="" disabled>
                     Selecciona un proveedor...
                   </option>
                   {suppliers.map((s) => (
                     <option key={s.id} value={s.id} className="bg-popover text-popover-foreground">
-                      {s.name} {s.tax_id ? `(${s.tax_id})` : ''}
+                      {s.name} {s.tax_id ? `(${s.tax_id})` : ''} {s.credit_days ? `· ${s.credit_days} días de crédito` : ''}
                     </option>
                   ))}
                 </select>
               ) : (
-                <div className="space-y-2">
-                  <p className="text-xs text-amber-600 dark:text-amber-400">
-                    No hay proveedores registrados aún. Se usará el proveedor general predeterminado.
+                <div className="space-y-2 p-2.5 rounded-lg border border-dashed text-center">
+                  <p className="text-xs text-muted-foreground">
+                    Aún no tienes proveedores registrados.
                   </p>
+                  <CreateSupplierDialog
+                    onSuccess={handleSupplierCreated}
+                    trigger={
+                      <Button type="button" size="xs" variant="outline" className="gap-1 text-xs">
+                        <Plus className="size-3" />
+                        Crear primer proveedor
+                      </Button>
+                    }
+                  />
                   <Input
                     name="supplier_id"
                     value="00000000-0000-0000-0000-000000000001"
@@ -146,7 +194,8 @@ export function CreateBillDialog({ suppliers }: CreateBillDialogProps) {
                 id="due_date"
                 name="due_date"
                 type="date"
-                defaultValue={defaultDueDate}
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
                 required
                 className="text-xs"
               />

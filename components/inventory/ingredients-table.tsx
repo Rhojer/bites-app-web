@@ -21,11 +21,19 @@ interface Ingredient {
   expiration_date: string | null
 }
 
-interface IngredientsTableProps {
-  ingredients: Ingredient[]
+export interface SupplierOption {
+  id: string
+  name: string
+  tax_id?: string | null
+  credit_days?: number | null
 }
 
-export function IngredientsTable({ ingredients }: IngredientsTableProps) {
+interface IngredientsTableProps {
+  ingredients: Ingredient[]
+  suppliers?: SupplierOption[]
+}
+
+export function IngredientsTable({ ingredients, suppliers = [] }: IngredientsTableProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('ALL')
   const [unitDisplayMode, setUnitDisplayMode] = useState<InventoryDisplayMode>('macro')
@@ -189,6 +197,7 @@ export function IngredientsTable({ ingredients }: IngredientsTableProps) {
                         <div className="flex items-center justify-center gap-1.5">
                           <RecordWasteDialog
                             ingredients={ingredients}
+                            suppliers={suppliers}
                             initialIngredientId={ing.id}
                             defaultType="purchase"
                             trigger={
@@ -205,6 +214,7 @@ export function IngredientsTable({ ingredients }: IngredientsTableProps) {
                           />
                           <RecordWasteDialog
                             ingredients={ingredients}
+                            suppliers={suppliers}
                             initialIngredientId={ing.id}
                             defaultType="waste"
                             trigger={

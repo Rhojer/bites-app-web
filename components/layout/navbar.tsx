@@ -1,14 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Bell, Menu, LogOut } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { SidebarContent } from '@/components/layout/sidebar'
 import { BcvBadge } from '@/components/layout/bcv-badge'
 import { OfflineSyncIndicator } from '@/components/layout/offline-sync-indicator'
+import { NotificationsMenu } from '@/components/layout/notifications-menu'
 
 interface NavbarProps {
   title?: string
@@ -17,27 +16,7 @@ interface NavbarProps {
 }
 
 export function Navbar({ title, description, actions }: NavbarProps) {
-  const router = useRouter()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
-  const [loggingOut, setLoggingOut] = useState(false)
-
-  const handleLogout = async () => {
-    try {
-      setLoggingOut(true)
-      if (typeof document !== 'undefined') {
-        document.cookie = 'bites_pos_session=; path=/; max-age=0'
-      }
-      const supabase = createClient()
-      await supabase.auth.signOut()
-      router.push('/login')
-      router.refresh()
-    } catch (err) {
-      console.error(err)
-      router.push('/login')
-    } finally {
-      setLoggingOut(false)
-    }
-  }
 
   return (
     <div className="sticky top-0 z-30 shrink-0">
@@ -75,7 +54,7 @@ export function Navbar({ title, description, actions }: NavbarProps) {
           </div>
         </div>
 
-        {/* Right: Offline Indicator + BCV Badge + Actions (Desktop) + Profile */}
+        {/* Right: Offline Indicator + BCV Badge + Actions (Desktop) + Notifications */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           <OfflineSyncIndicator />
           <BcvBadge />
@@ -87,40 +66,10 @@ export function Navbar({ title, description, actions }: NavbarProps) {
             </div>
           )}
 
-          <div className="hidden sm:block h-4 w-px bg-border mx-0.5 sm:mx-1" />
+          <div className="h-4 w-px bg-border mx-0.5 sm:mx-1" />
 
-          {/* Notificaciones */}
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="hidden sm:flex relative text-muted-foreground hover:text-foreground size-8 sm:size-9"
-            aria-label="Notificaciones"
-          >
-            <Bell className="size-4" />
-            <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-orange-500 ring-2 ring-card" />
-          </Button>
-
-          {/* Usuario / Rol + Logout */}
-          <div className="flex items-center gap-2 pl-1 sm:pl-2 border-l">
-            <div className="size-7 sm:size-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
-              AD
-            </div>
-            <div className="hidden lg:block text-left">
-              <p className="text-xs font-semibold leading-none text-foreground">Administrador</p>
-              <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">Admin General</p>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={handleLogout}
-              disabled={loggingOut}
-              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 size-8 ml-0.5 cursor-pointer"
-              title="Cerrar Sesión / Salir"
-              aria-label="Cerrar Sesión"
-            >
-              <LogOut className="size-3.5" />
-            </Button>
-          </div>
+          {/* Notificaciones Interactivas */}
+          <NotificationsMenu />
         </div>
       </header>
 

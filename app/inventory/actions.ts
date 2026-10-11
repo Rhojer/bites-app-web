@@ -18,6 +18,12 @@ export async function createIngredientAction(formData: FormData) {
   const cost_per_unit = parseFloat(formData.get('cost_per_unit') as string) || 0
   const location = sanitizeText(formData.get('location') as string) || null
 
+  const is_credit = formData.get('is_credit') === 'true'
+  const supplier_id = (formData.get('supplier_id') as string) || null
+  const invoice_number = sanitizeText(formData.get('invoice_number') as string) || null
+  const due_date = (formData.get('due_date') as string) || null
+  const credit_notes = sanitizeText(formData.get('credit_notes') as string) || null
+
   if (!name) {
     throw new Error('El nombre del insumo es obligatorio.')
   }
@@ -32,6 +38,7 @@ export async function createIngredientAction(formData: FormData) {
     max_stock,
     cost_per_unit,
     location,
+    supplier_id: supplier_id || null,
   })
 
   if (error) {
@@ -44,11 +51,30 @@ export async function createIngredientAction(formData: FormData) {
     if (created?.id) {
       await supabase.from('inventory_movements').insert({
         ingredient_id: created.id,
-        type: 'adjustment',
+        type: is_credit ? 'purchase' : 'adjustment',
         quantity: current_stock,
         unit_cost: cost_per_unit,
-        reason: 'Inventario inicial'
+        reason: is_credit
+          ? `Carga inicial a crédito (${invoice_number ? `Factura ${invoice_number}` : 'Proveedor'})`
+          : 'Inventario inicial'
       })
+    }
+
+    // Si viene a crédito con un proveedor, crear la cuenta por pagar en Finanzas
+    if (is_credit && supplier_id) {
+      const totalCreditAmount = Number((current_stock * cost_per_unit).toFixed(2))
+      if (totalCreditAmount > 0) {
+        const computedDueDate = due_date || new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0]
+        await supabase.from('bills_payable').insert({
+          supplier_id,
+          invoice_number,
+          amount: totalCreditAmount,
+          due_date: computedDueDate,
+          status: 'pending',
+          notes: credit_notes || `Carga inicial a crédito: ${name} (${current_stock} ${unit})`,
+        })
+        revalidatePath('/finances')
+      }
     }
   }
 
@@ -73,7 +99,7 @@ export async function registerMovementAction(formData: FormData) {
   // Obtener insumo actual
   const { data: ingredient, error: fetchErr } = await supabase
     .from('ingredients')
-    .select('current_stock, cost_per_unit')
+    .select('id, name, current_stock, cost_per_unit, unit, supplier_id')
     .eq('id', ingredient_id)
     .single()
 
@@ -113,12 +139,17 @@ export async function registerMovementAction(formData: FormData) {
 
   const newStock = Math.max(0, ingredient.current_stock + stockDelta)
 
+  // Extraer proveedor si es compra a crédito
+  const is_credit = type === 'purchase' && formData.get('is_credit') === 'true'
+  const supplier_id = (formData.get('supplier_id') as string) || null
+
   // Actualizar tabla ingredients
   await supabase
     .from('ingredients')
     .update({
       current_stock: newStock,
       cost_per_unit: newCostPerUnit,
+      ...(is_credit && supplier_id && !ingredient.supplier_id ? { supplier_id } : {}),
     })
     .eq('id', ingredient_id)
 
@@ -130,6 +161,35 @@ export async function registerMovementAction(formData: FormData) {
     unit_cost: effectiveUnitCost,
     reason: reason || (type === 'waste' ? 'Merma registrada' : 'Entrada de mercancía'),
   })
+
+  // Si es compra a crédito con un proveedor, registrar cuenta por pagar en Finanzas
+  if (type === 'purchase') {
+    const is_credit = formData.get('is_credit') === 'true'
+    const supplier_id = (formData.get('supplier_id') as string) || null
+    const invoice_number = sanitizeText(formData.get('invoice_number') as string) || null
+    const due_date = (formData.get('due_date') as string) || null
+    const credit_notes = sanitizeText(formData.get('credit_notes') as string) || null
+
+    if (is_credit && supplier_id) {
+      const parsedTotal = purchaseTotalCostRaw !== null && purchaseTotalCostRaw !== '' ? parseFloat(purchaseTotalCostRaw) : NaN
+      const totalBillAmount = !isNaN(parsedTotal) && parsedTotal > 0
+        ? parsedTotal
+        : Number((quantity * effectiveUnitCost).toFixed(2))
+
+      if (totalBillAmount > 0) {
+        const computedDueDate = due_date || new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0]
+        await supabase.from('bills_payable').insert({
+          supplier_id,
+          invoice_number,
+          amount: totalBillAmount,
+          due_date: computedDueDate,
+          status: 'pending',
+          notes: credit_notes || `Carga de insumo a crédito: ${ingredient.name} (${quantity} ${ingredient.unit || 'u'})`,
+        })
+        revalidatePath('/finances')
+      }
+    }
+  }
 
   revalidatePath('/inventory')
   return { success: true }

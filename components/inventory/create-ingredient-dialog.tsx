@@ -15,6 +15,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { createIngredientAction } from '@/app/inventory/actions'
+import { CreateSupplierDialog } from '@/components/finances/create-supplier-dialog'
 
 const CATEGORIES = [
   'Carnes & Aves',
@@ -38,16 +39,52 @@ const UNITS = [
   { value: 'porcion', label: 'Porciones (porción)' },
 ]
 
-export function CreateIngredientDialog() {
+export interface SupplierOption {
+  id: string
+  name: string
+  tax_id?: string | null
+  credit_days?: number | null
+}
+
+interface CreateIngredientDialogProps {
+  suppliers?: SupplierOption[]
+}
+
+export function CreateIngredientDialog({ suppliers: initialSuppliers = [] }: CreateIngredientDialogProps) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const [suppliers, setSuppliers] = useState<SupplierOption[]>(initialSuppliers)
+  const [isCredit, setIsCredit] = useState(false)
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string>('')
+  const [creditDueDate, setCreditDueDate] = useState<string>(
+    new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  )
 
   const [unit, setUnit] = useState('kg')
   const [stock, setStock] = useState('0')
   const [unitCost, setUnitCost] = useState('')
   const [totalCost, setTotalCost] = useState('')
   const [lastEdited, setLastEdited] = useState<'unit' | 'total'>('unit')
+
+  function handleSupplierChange(supId: string) {
+    setSelectedSupplierId(supId)
+    const sup = suppliers.find((s) => s.id === supId)
+    if (sup && sup.credit_days) {
+      const newDue = new Date(Date.now() + sup.credit_days * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      setCreditDueDate(newDue)
+    }
+  }
+
+  function handleSupplierCreated(newSup: SupplierOption) {
+    setSuppliers((prev) => [...prev, newSup])
+    setSelectedSupplierId(newSup.id)
+    if (newSup.credit_days) {
+      const newDue = new Date(Date.now() + newSup.credit_days * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      setCreditDueDate(newDue)
+    }
+  }
 
   function handleStockChange(val: string) {
     setStock(val)
@@ -255,6 +292,106 @@ export function CreateIngredientDialog() {
               <p className="text-[10px] text-muted-foreground">
                 Puedes ingresar el costo unitario o el costo total pagado; el otro se calculará automáticamente en base al stock.
               </p>
+            </div>
+
+            {/* Pregunta de Crédito con Proveedor */}
+            <div className="p-3 rounded-lg border bg-muted/10 space-y-3">
+              <div className="flex items-start gap-2.5">
+                <input
+                  type="checkbox"
+                  id="is_credit_create"
+                  name="is_credit"
+                  value="true"
+                  checked={isCredit}
+                  onChange={(e) => setIsCredit(e.target.checked)}
+                  className="mt-0.5 size-4 rounded border-input text-primary focus:ring-primary accent-primary"
+                />
+                <div className="space-y-0.5">
+                  <Label htmlFor="is_credit_create" className="font-semibold text-foreground cursor-pointer text-xs">
+                    ¿Esta carga inicial proviene de un crédito con algún proveedor?
+                  </Label>
+                  <p className="text-[10px] text-muted-foreground">
+                    Generará automáticamente una cuenta por pagar en Finanzas con la fecha de vencimiento y el monto de esta carga.
+                  </p>
+                </div>
+              </div>
+
+              {isCredit && (
+                <div className="pt-2 border-t space-y-3">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="supplier_id">Proveedor Asociado *</Label>
+                      <CreateSupplierDialog
+                        onSuccess={handleSupplierCreated}
+                        trigger={
+                          <button
+                            type="button"
+                            className="text-[10px] text-primary hover:underline font-medium"
+                          >
+                            + Nuevo Proveedor
+                          </button>
+                        }
+                      />
+                    </div>
+                    {suppliers.length > 0 ? (
+                      <select
+                        id="supplier_id"
+                        name="supplier_id"
+                        required={isCredit}
+                        value={selectedSupplierId}
+                        onChange={(e) => handleSupplierChange(e.target.value)}
+                        className="w-full h-8 rounded-md border border-input bg-transparent px-2.5 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      >
+                        <option value="" disabled>Selecciona un proveedor...</option>
+                        {suppliers.map((s) => (
+                          <option key={s.id} value={s.id} className="bg-popover text-popover-foreground">
+                            {s.name} {s.tax_id ? `(${s.tax_id})` : ''} {s.credit_days ? `· ${s.credit_days}d crédito` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <div className="p-2 rounded border border-dashed text-center text-xs text-muted-foreground space-y-1">
+                        <span>No hay proveedores registrados aún.</span>
+                        <div>
+                          <CreateSupplierDialog
+                            onSuccess={handleSupplierCreated}
+                            trigger={
+                              <button type="button" className="text-primary font-semibold hover:underline text-[11px]">
+                                + Crear primer proveedor
+                              </button>
+                            }
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="invoice_number">N° de Factura / Control</Label>
+                      <Input
+                        id="invoice_number"
+                        name="invoice_number"
+                        placeholder="Ej: FAC-889"
+                        className="h-8 font-mono text-xs"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label htmlFor="due_date">Fecha Límite / Vencimiento</Label>
+                      <Input
+                        id="due_date"
+                        name="due_date"
+                        type="date"
+                        value={creditDueDate}
+                        onChange={(e) => setCreditDueDate(e.target.value)}
+                        required={isCredit}
+                        className="h-8 text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-1.5">
