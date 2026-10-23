@@ -224,7 +224,10 @@ export function SalesHistoryView({
       ) : (
         <div className="space-y-5">
           {dayGroups.map((group) => {
-            const dayTotalBs = convertUsdToBs(group.totalAmount, bcvRate)
+            const dayTotalBs = group.sales.reduce((acc, s) => {
+              const sRate = s.exchange_rate || bcvRate
+              return acc + (s.total_ves || convertUsdToBs(s.total, sRate))
+            }, 0)
             return (
               <div key={group.dateKey} className="space-y-2">
                 {/* Encabezado del Día */}
@@ -256,7 +259,8 @@ export function SalesHistoryView({
                   {group.sales.map((sale) => {
                     const customerInfo = formatCustomerDisplay(sale.customer_name, sale.type, sale.table_number)
                     const time = formatSaleTime(sale.created_at)
-                    const saleBs = convertUsdToBs(sale.total, bcvRate)
+                    const saleRate = sale.exchange_rate || bcvRate
+                    const saleBs = sale.total_ves || convertUsdToBs(sale.total, saleRate)
                     const totalDishes = sale.items.reduce((acc, i) => acc + i.quantity, 0)
                     const dishesSummary = sale.items.map((i) => `${i.quantity}x ${i.recipe_name}`).join(', ')
 

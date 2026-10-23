@@ -17,7 +17,9 @@ import {
   Smartphone,
   CreditCard,
   ShoppingBag,
-  Coins
+  Coins,
+  Utensils,
+  Bike
 } from 'lucide-react'
 import { updateOrderStatusAction, cancelOrderAction } from '@/app/pos/actions'
 import { PayOrderDialog } from '@/components/pos/pay-order-dialog'
@@ -91,6 +93,7 @@ export function ActiveOrdersList({ orders, customers = [] }: ActiveOrdersListPro
 
   // Helper para minutos transcurridos
   function getElapsedMinutes(createdAt: string) {
+    // eslint-disable-next-line react-hooks/purity
     const diffMs = Date.now() - new Date(createdAt).getTime()
     return Math.floor(diffMs / 60000)
   }
@@ -183,8 +186,23 @@ export function ActiveOrdersList({ orders, customers = [] }: ActiveOrdersListPro
                       <span className="font-mono font-bold text-xs text-muted-foreground">
                         #{ord.id.slice(0, 6).toUpperCase()}
                       </span>
-                      <span className="text-[11px] font-medium text-muted-foreground">
-                        {ord.type === 'dine_in' ? '🍽️ Salón' : ord.type === 'takeaway' ? '🛍️ Para Llevar' : '🛵 Delivery'}
+                      <span className="text-[11px] font-medium text-muted-foreground inline-flex items-center gap-1">
+                        {ord.type === 'dine_in' ? (
+                          <>
+                            <Utensils className="size-3" />
+                            <span>Salón</span>
+                          </>
+                        ) : ord.type === 'takeaway' ? (
+                          <>
+                            <ShoppingBag className="size-3" />
+                            <span>Para Llevar</span>
+                          </>
+                        ) : (
+                          <>
+                            <Bike className="size-3" />
+                            <span>Delivery</span>
+                          </>
+                        )}
                       </span>
                     </div>
                     <p className="font-bold text-base text-foreground mt-0.5 tracking-tight">

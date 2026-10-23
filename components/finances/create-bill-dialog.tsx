@@ -37,7 +37,7 @@ export function CreateBillDialog({ suppliers: initialSuppliers }: CreateBillDial
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>('')
 
   // Default due date: today + 15 days
-  const [dueDate, setDueDate] = useState<string>(
+  const [dueDate, setDueDate] = useState<string>(() =>
     new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   )
 

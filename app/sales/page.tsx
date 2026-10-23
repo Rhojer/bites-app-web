@@ -3,6 +3,7 @@ import { AdminShell } from '@/components/layout/admin-shell'
 import { Navbar } from '@/components/layout/navbar'
 import { SalesHistoryView } from '@/components/sales/sales-history-view'
 import { SaleRecord, SaleItem, SalePayment } from '@/lib/domain/sales'
+import { getBcvRate, convertUsdToBs } from '@/lib/bcv'
 
 export const dynamic = 'force-dynamic'
 
@@ -61,22 +62,44 @@ export default async function SalesHistoryPage() {
     itemsByOrder.set(it.order_id, list)
   }
 
-  // 4. Agrupar pagos por orden
+  // 4. Agrupar pagos por orden con su tasa de cambio histórica
   const paymentsByOrder = new Map<string, SalePayment[]>()
-  for (const p of paymentsData || []) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const p of (paymentsData as any[]) || []) {
     const list = paymentsByOrder.get(p.order_id) || []
+    let pRate = p.exchange_rate || null
+    if (!pRate && p.reference_number) {
+      const match = p.reference_number.match(/Tasa:\s*([0-9.,]+)/i)
+      if (match) pRate = parseFloat(match[1].replace(',', '.'))
+    }
+
     list.push({
       id: p.id,
       method_name: methodsMap.get(p.payment_method_id) || 'Pago',
       amount: p.amount,
       reference_number: p.reference_number || null,
+      exchange_rate: pRate,
+      currency: p.currency || null,
+      amount_currency: p.amount_currency || null,
     })
     paymentsByOrder.set(p.order_id, list)
   }
 
+  // Obtener tasa actual del BCV
+  const bcvInfo = await getBcvRate()
+  const currentBcvRate = bcvInfo.rate
+
   // 5. Ensamblar lista de registros de venta
   const sales: SaleRecord[] = (ordersData || []).map((ord) => {
     const tbl = ord.table_id ? tablesMap.get(ord.table_id) : null
+    const orderPayments = paymentsByOrder.get(ord.id) || []
+    
+    // Tasa histórica del cobro: tomar del primer pago que tenga exchange_rate, o tasa de fecha
+    const paymentWithRate = orderPayments.find((p) => p.exchange_rate && p.exchange_rate > 0)
+    const historicalRate = paymentWithRate?.exchange_rate || null
+    const effectiveRate = historicalRate || currentBcvRate
+    const orderTotal = ord.total || 0
+
     return {
       id: ord.id,
       created_at: ord.created_at,
@@ -89,18 +112,13 @@ export default async function SalesHistoryPage() {
       table_name: tbl?.name || null,
       notes: ord.notes || null,
       subtotal: ord.subtotal || ord.total || 0,
-      total: ord.total || 0,
+      total: orderTotal,
+      exchange_rate: historicalRate,
+      total_ves: convertUsdToBs(orderTotal, effectiveRate),
       items: itemsByOrder.get(ord.id) || [],
-      payments: paymentsByOrder.get(ord.id) || [],
+      payments: orderPayments,
     }
   })
-
-  // 6. Obtener tasa BCV
-  let bcvRate = 813.74
-  try {
-    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
-    // En el servidor podemos consultar una tasa fallback o la API si está disponible
-  } catch {}
 
   return (
     <AdminShell>
@@ -110,7 +128,7 @@ export default async function SalesHistoryPage() {
       />
 
       <main className="p-3.5 sm:p-6 max-w-5xl mx-auto">
-        <SalesHistoryView initialSales={sales} bcvRate={bcvRate} />
+        <SalesHistoryView initialSales={sales} bcvRate={currentBcvRate} />
       </main>
     </AdminShell>
   )

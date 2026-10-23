@@ -431,6 +431,7 @@ export function BillsPayableTable({ bills }: BillsPayableTableProps) {
                             disabled={deletingId === bill.id}
                             onClick={() => handleDelete(bill.id)}
                             title="Eliminar factura"
+                            aria-label="Eliminar factura"
                           >
                             <Trash2 className="size-3.5" />
                           </Button>

@@ -1,17 +1,75 @@
 import https from 'https';
 
+export type BcvSource =
+  | 'bcv_direct'
+  | 'dolarapi_backup'
+  | 'pydolarve_backup'
+  | 'manual_override'
+  | 'last_known_fallback'
+  | 'fallback';
+
 export interface BcvRateInfo {
-  rate: number
-  formattedRate: string
-  currency: string
-  date: string
-  lastUpdated: string
-  source: 'bcv_direct' | 'dolarapi_backup' | 'pydolarve_backup' | 'fallback'
+  rate: number;
+  formattedRate: string;
+  currency: string;
+  date: string;
+  lastUpdated: string;
+  source: BcvSource;
+  isStale: boolean;
+  notes?: string;
 }
 
-let cachedRate: BcvRateInfo | null = null
-let cacheTimestamp = 0
-const CACHE_TTL_MS = 10 * 60 * 1000 // 10 minutos de caché en memoria
+export const BCV_FALLBACK_RATE = 886.22;
+
+let cachedRate: BcvRateInfo | null = null;
+let cacheTimestamp = 0;
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutos de caché en memoria
+
+// Última tasa exitosa obtenida desde fuentes externas
+let lastKnownGoodRate: BcvRateInfo | null = null;
+
+// Tasa manual provisional fijada por el usuario
+let manualOverride: {
+  rate: number;
+  setAt: string;
+} | null = null;
+
+export function setManualBcvRate(rate: number): BcvRateInfo {
+  if (isNaN(rate) || rate <= 0) {
+    throw new Error('La tasa manual debe ser un número positivo');
+  }
+  const now = new Date().toISOString();
+  manualOverride = {
+    rate,
+    setAt: now,
+  };
+  const info: BcvRateInfo = {
+    rate,
+    formattedRate: rate.toLocaleString('es-VE', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 4,
+    }),
+    currency: 'Bs/USD',
+    date: now.split('T')[0],
+    lastUpdated: now,
+    source: 'manual_override',
+    isStale: false,
+    notes: 'Tasa manual provisional establecida por el operador',
+  };
+  cachedRate = info;
+  cacheTimestamp = Date.now();
+  return info;
+}
+
+export function clearManualBcvRate(): void {
+  manualOverride = null;
+  cachedRate = null;
+  cacheTimestamp = 0;
+}
+
+export function getManualOverrideInfo() {
+  return manualOverride;
+}
 
 /**
  * Consulta directa a la página oficial del BCV (https://www.bcv.org.ve/)
@@ -30,21 +88,21 @@ async function fetchDirectFromBcv(): Promise<BcvRateInfo | null> {
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
       },
-    }
+    };
 
     const req = https.request(options, (res) => {
-      let data = ''
-      res.on('data', (chunk) => (data += chunk))
+      let data = '';
+      res.on('data', (chunk) => (data += chunk));
       res.on('end', () => {
         try {
           // Extraer tasa USD del bloque: <span> USD</span> ... <strong class="strong-tb">813,73610000</strong>
-          const usdMatch = data.match(/USD[\s\S]*?<strong[^>]*>\s*([0-9.,]+)\s*<\/strong>/i)
+          const usdMatch = data.match(/USD[\s\S]*?<strong[^>]*>\s*([0-9.,]+)\s*<\/strong>/i);
           // Extraer fecha valor si está presente
-          const dateMatch = data.match(/Fecha Valor:[\s\S]*?content="([^"]+)"/i)
+          const dateMatch = data.match(/Fecha Valor:[\s\S]*?content="([^"]+)"/i);
 
           if (usdMatch && usdMatch[1]) {
-            const rawRate = usdMatch[1].replace(/\./g, '').replace(',', '.')
-            const numRate = parseFloat(rawRate)
+            const rawRate = usdMatch[1].replace(/\./g, '').replace(',', '.');
+            const numRate = parseFloat(rawRate);
 
             if (!isNaN(numRate) && numRate > 0) {
               const info: BcvRateInfo = {
@@ -57,24 +115,25 @@ async function fetchDirectFromBcv(): Promise<BcvRateInfo | null> {
                 date: dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0],
                 lastUpdated: new Date().toISOString(),
                 source: 'bcv_direct',
-              }
-              return resolve(info)
+                isStale: false,
+              };
+              return resolve(info);
             }
           }
-          resolve(null)
+          resolve(null);
         } catch {
-          resolve(null)
+          resolve(null);
         }
-      })
-    })
+      });
+    });
 
-    req.on('error', () => resolve(null))
+    req.on('error', () => resolve(null));
     req.setTimeout(7000, () => {
-      req.destroy()
-      resolve(null)
-    })
-    req.end()
-  })
+      req.destroy();
+      resolve(null);
+    });
+    req.end();
+  });
 }
 
 /**
@@ -84,10 +143,10 @@ async function fetchFromDolarApi(): Promise<BcvRateInfo | null> {
   try {
     const res = await fetch('https://ve.dolarapi.com/v1/dolares/oficial', {
       next: { revalidate: 600 },
-    })
+    });
     if (res.ok) {
-      const data = await res.json()
-      const rate = typeof data.promedio === 'number' ? data.promedio : parseFloat(data.promedio)
+      const data = await res.json();
+      const rate = typeof data.promedio === 'number' ? data.promedio : parseFloat(data.promedio);
       if (rate > 0) {
         return {
           rate,
@@ -99,13 +158,14 @@ async function fetchFromDolarApi(): Promise<BcvRateInfo | null> {
           date: data.fechaActualizacion || new Date().toISOString(),
           lastUpdated: new Date().toISOString(),
           source: 'dolarapi_backup',
-        }
+          isStale: false,
+        };
       }
     }
   } catch {
     // Silencioso, pasará al siguiente backup
   }
-  return null
+  return null;
 }
 
 /**
@@ -115,11 +175,11 @@ async function fetchFromPyDolarVe(): Promise<BcvRateInfo | null> {
   try {
     const res = await fetch('https://pydolarve.org/api/v1/dollar?page=bcv', {
       next: { revalidate: 600 },
-    })
+    });
     if (res.ok) {
-      const data = await res.json()
-      const price = data.monitors?.usd?.price
-      const rate = typeof price === 'number' ? price : parseFloat(price)
+      const data = await res.json();
+      const price = data.monitors?.usd?.price;
+      const rate = typeof price === 'number' ? price : parseFloat(price);
       if (rate > 0) {
         return {
           rate,
@@ -131,78 +191,119 @@ async function fetchFromPyDolarVe(): Promise<BcvRateInfo | null> {
           date: data.datetime?.date || new Date().toISOString(),
           lastUpdated: new Date().toISOString(),
           source: 'pydolarve_backup',
-        }
+          isStale: false,
+        };
       }
     }
   } catch {
     // Silencioso
   }
-  return null
+  return null;
 }
 
 /**
- * Obtiene la tasa oficial del BCV con caché y múltiples niveles de respaldo
+ * Obtiene la tasa oficial del BCV con caché y múltiples niveles de respaldo.
+ * Si se ha fijado una tasa manual provisional, se respeta prioritariamente.
  */
-export async function getBcvRate(): Promise<BcvRateInfo> {
-  const now = Date.now()
-  if (cachedRate && now - cacheTimestamp < CACHE_TTL_MS) {
-    return cachedRate
+export async function getBcvRate(forceRefresh = false): Promise<BcvRateInfo> {
+  // 0. Si hay tasa manual activa, tiene prioridad absoluta hasta ser reseteada
+  if (manualOverride) {
+    return {
+      rate: manualOverride.rate,
+      formattedRate: manualOverride.rate.toLocaleString('es-VE', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 4,
+      }),
+      currency: 'Bs/USD',
+      date: manualOverride.setAt.split('T')[0],
+      lastUpdated: manualOverride.setAt,
+      source: 'manual_override',
+      isStale: false,
+      notes: 'Tasa manual provisional establecida por el operador',
+    };
+  }
+
+  const now = Date.now();
+  if (!forceRefresh && cachedRate && now - cacheTimestamp < CACHE_TTL_MS) {
+    return cachedRate;
   }
 
   // 1. Intentar scraping directo a www.bcv.org.ve
-  const directBcv = await fetchDirectFromBcv()
+  const directBcv = await fetchDirectFromBcv();
   if (directBcv) {
-    cachedRate = directBcv
-    cacheTimestamp = now
-    return directBcv
+    cachedRate = directBcv;
+    cacheTimestamp = now;
+    lastKnownGoodRate = directBcv;
+    return directBcv;
   }
 
   // 2. Intentar backup ve.dolarapi.com
-  const backup1 = await fetchFromDolarApi()
+  const backup1 = await fetchFromDolarApi();
   if (backup1) {
-    cachedRate = backup1
-    cacheTimestamp = now
-    return backup1
+    cachedRate = backup1;
+    cacheTimestamp = now;
+    lastKnownGoodRate = backup1;
+    return backup1;
   }
 
   // 3. Intentar backup pydolarve.org
-  const backup2 = await fetchFromPyDolarVe()
+  const backup2 = await fetchFromPyDolarVe();
   if (backup2) {
-    cachedRate = backup2
-    cacheTimestamp = now
-    return backup2
+    cachedRate = backup2;
+    cacheTimestamp = now;
+    lastKnownGoodRate = backup2;
+    return backup2;
   }
 
-  // 4. Fallback seguro si no hay internet o todos fallaron
+  // 4. Si fallaron todas las fuentes, recuperar la última tasa buena conocida
+  if (lastKnownGoodRate) {
+    const staleInfo: BcvRateInfo = {
+      ...lastKnownGoodRate,
+      source: 'last_known_fallback',
+      isStale: true,
+      notes: 'No se pudo sincronizar con fuentes oficiales. Mostrando última tasa conocida.',
+    };
+    cachedRate = staleInfo;
+    cacheTimestamp = now;
+    return staleInfo;
+  }
+
+  // 5. Fallback seguro inicial si el servidor acaba de arrancar y no hay internet
   const fallbackRate: BcvRateInfo = {
-    rate: 813.74,
-    formattedRate: '813,74',
+    rate: BCV_FALLBACK_RATE,
+    formattedRate: BCV_FALLBACK_RATE.toLocaleString('es-VE', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 4,
+    }),
     currency: 'Bs/USD',
     date: new Date().toISOString().split('T')[0],
     lastUpdated: new Date().toISOString(),
     source: 'fallback',
-  }
+    isStale: true,
+    notes: 'Sin conexión a fuentes oficiales. Usando tasa de respaldo inicial.',
+  };
 
-  cachedRate = fallbackRate
-  cacheTimestamp = now
-  return fallbackRate
+  cachedRate = fallbackRate;
+  cacheTimestamp = now;
+  return fallbackRate;
 }
 
 /**
  * Helpers para conversión y formato monetario
  */
 export function convertUsdToBs(usdAmount: number, rate: number): number {
-  return Number((usdAmount * rate).toFixed(2))
+  if (!rate || rate <= 0) return 0;
+  return Number((usdAmount * rate).toFixed(2));
 }
 
 export function formatBs(bsAmount: number): string {
-  return `Bs. ${bsAmount.toLocaleString('es-VE', {
+  return `Bs. ${(bsAmount || 0).toLocaleString('es-VE', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  })}`
+  })}`;
 }
 
 export function formatDualPrice(usdAmount: number, rate: number): string {
-  const bsAmount = convertUsdToBs(usdAmount, rate)
-  return `$${usdAmount.toFixed(2)} (${formatBs(bsAmount)})`
+  const bsAmount = convertUsdToBs(usdAmount, rate);
+  return `$${usdAmount.toFixed(2)} (${formatBs(bsAmount)})`;
 }

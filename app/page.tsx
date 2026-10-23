@@ -118,7 +118,7 @@ export default async function DashboardPage() {
                 {greeting} Bites Street Food
               </span>
               <Badge variant="outline" className="text-[11px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20">
-                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse mr-1.5 inline-block" />
+                <span className="size-1.5 rounded-full bg-emerald-500 mr-1.5 inline-block" />
                 Servicio Activo
               </Badge>
             </div>
@@ -142,16 +142,16 @@ export default async function DashboardPage() {
           {/* Facturación */}
           <div className="p-4 sm:p-5 rounded-2xl border bg-card shadow-2xs flex flex-col justify-between">
             <div>
-              <p className="text-xs font-semibold text-muted-foreground tracking-wide uppercase">
+              <p className="text-xs font-semibold text-muted-foreground">
                 Ventas del Turno
               </p>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight text-foreground mt-1">
+              <p className="text-2xl sm:text-3xl font-black tracking-tight text-foreground mt-1 tabular-nums">
                 ${totalSales.toFixed(2)}
               </p>
             </div>
             <div className="mt-3 pt-3 border-t text-[11px] text-muted-foreground flex items-center justify-between">
               <span>{totalOrders} {totalOrders === 1 ? 'comanda' : 'comandas'}</span>
-              <span className="font-semibold text-foreground">
+              <span className="font-semibold text-foreground tabular-nums">
                 ${averageTicket.toFixed(2)} prom.
               </span>
             </div>
@@ -161,7 +161,7 @@ export default async function DashboardPage() {
           <div className="p-4 sm:p-5 rounded-2xl border bg-card shadow-2xs flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold text-muted-foreground tracking-wide uppercase">
+                <p className="text-xs font-semibold text-muted-foreground">
                   Cocina (KDS)
                 </p>
                 {activeKitchenOrders.length > 0 && (
@@ -170,7 +170,7 @@ export default async function DashboardPage() {
                   </Badge>
                 )}
               </div>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight mt-1 text-foreground">
+              <p className="text-2xl sm:text-3xl font-black tracking-tight mt-1 text-foreground tabular-nums">
                 {activeKitchenOrders.length}
               </p>
             </div>
@@ -188,7 +188,7 @@ export default async function DashboardPage() {
           <div className="p-4 sm:p-5 rounded-2xl border bg-card shadow-2xs flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold text-muted-foreground tracking-wide uppercase">
+                <p className="text-xs font-semibold text-muted-foreground">
                   Almacén & Insumos
                 </p>
                 {criticalStock.length > 0 ? (
@@ -201,7 +201,7 @@ export default async function DashboardPage() {
                   </Badge>
                 )}
               </div>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight mt-1 text-foreground">
+              <p className="text-2xl sm:text-3xl font-black tracking-tight mt-1 text-foreground tabular-nums">
                 ${totalStockValue.toFixed(2)}
               </p>
             </div>
@@ -216,10 +216,10 @@ export default async function DashboardPage() {
           {/* Cuentas por Liquidar */}
           <div className="p-4 sm:p-5 rounded-2xl border bg-card shadow-2xs flex flex-col justify-between">
             <div>
-              <p className="text-xs font-semibold text-muted-foreground tracking-wide uppercase">
+              <p className="text-xs font-semibold text-muted-foreground">
                 Cuentas por Pagar
               </p>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight mt-1 text-foreground">
+              <p className="text-2xl sm:text-3xl font-black tracking-tight mt-1 text-foreground tabular-nums">
                 ${totalBillsAmount.toFixed(2)}
               </p>
             </div>
@@ -246,7 +246,7 @@ export default async function DashboardPage() {
             {/* POS */}
             <Link
               href="/pos"
-              className="p-4 rounded-2xl border bg-card hover:border-primary/50 hover:shadow-xs transition-all flex flex-col justify-between group"
+              className="p-4 rounded-2xl border bg-card hover:border-primary/50 hover:shadow-xs transition-colors duration-150 flex flex-col justify-between group"
             >
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -272,7 +272,7 @@ export default async function DashboardPage() {
             {/* Cocina */}
             <Link
               href="/kitchen"
-              className="p-4 rounded-2xl border bg-card hover:border-rose-500/50 hover:shadow-xs transition-all flex flex-col justify-between group"
+              className="p-4 rounded-2xl border bg-card hover:border-rose-500/50 hover:shadow-xs transition-colors duration-150 flex flex-col justify-between group"
             >
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -298,7 +298,7 @@ export default async function DashboardPage() {
             {/* Inventario y Mermas */}
             <Link
               href="/inventory"
-              className="p-4 rounded-2xl border bg-card hover:border-blue-500/50 hover:shadow-xs transition-all flex flex-col justify-between group"
+              className="p-4 rounded-2xl border bg-card hover:border-blue-500/50 hover:shadow-xs transition-colors duration-150 flex flex-col justify-between group"
             >
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -324,7 +324,7 @@ export default async function DashboardPage() {
             {/* Caja del Día */}
             <Link
               href="/cash-register"
-              className="p-4 rounded-2xl border bg-card hover:border-emerald-500/50 hover:shadow-xs transition-all flex flex-col justify-between group"
+              className="p-4 rounded-2xl border bg-card hover:border-emerald-500/50 hover:shadow-xs transition-colors duration-150 flex flex-col justify-between group"
             >
               <div className="space-y-2">
                 <div className="flex items-center justify-between">

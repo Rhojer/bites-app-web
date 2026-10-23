@@ -27,7 +27,8 @@ import {
   Square,
   SlidersHorizontal,
   TrendingUp,
-  Timer
+  Timer,
+  Utensils
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -213,16 +214,16 @@ export function KitchenDisplay({ initialOrders }: KitchenDisplayProps) {
 
     // Código de color según requerimiento:
     // Verde: < 10min | Amarillo: 10-20min | Rojo: > 20min
-    let colorClass = 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30 dark:text-emerald-400'
+    let colorClass = 'bg-emerald-500/20 text-emerald-900 dark:text-emerald-100 border-emerald-500/50 font-bold'
     let badgeVariant: 'green' | 'yellow' | 'red' = 'green'
     let label = 'A tiempo'
 
     if (totalMinutes >= 20) {
-      colorClass = 'bg-rose-500/15 text-rose-600 border-rose-500/40 dark:text-rose-400 animate-pulse font-extrabold'
+      colorClass = 'bg-rose-500 text-white border-rose-600 font-black animate-pulse shadow-xs'
       badgeVariant = 'red'
       label = 'Urgente / Demorada'
     } else if (totalMinutes >= 10) {
-      colorClass = 'bg-amber-500/15 text-amber-600 border-amber-500/40 dark:text-amber-400 font-bold'
+      colorClass = 'bg-amber-500/25 text-amber-950 dark:text-amber-100 border-amber-500/60 font-extrabold'
       badgeVariant = 'yellow'
       label = 'Atención'
     }
@@ -380,7 +381,7 @@ export function KitchenDisplay({ initialOrders }: KitchenDisplayProps) {
         )
       } else {
         return (
-          <Badge variant="outline" className="bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30 gap-1 text-xs py-0.5">
+          <Badge variant="outline" className="bg-blue-500/15 text-blue-800 dark:text-blue-300 border-blue-500/30 gap-1 text-xs py-0.5 font-semibold">
             <Bike className="size-3" />
             <span>Delivery</span>
           </Badge>
@@ -476,8 +477,8 @@ export function KitchenDisplay({ initialOrders }: KitchenDisplayProps) {
 
                         {/* Notas especiales de cocina destacadas */}
                         {item.notes && (
-                          <div className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20 w-fit">
-                            <span>⚠️</span>
+                          <div className="mt-1 flex items-center gap-1.5 text-[11px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20 w-fit">
+                            <AlertTriangle className="size-3 shrink-0" />
                             <span>{item.notes}</span>
                           </div>
                         )}
@@ -563,8 +564,9 @@ export function KitchenDisplay({ initialOrders }: KitchenDisplayProps) {
 
           {order.kitchen_status === 'delivered' && (
             <div className="flex items-center justify-between w-full">
-              <Badge variant="outline" className="text-[11px] bg-slate-500/10 text-slate-700 dark:text-slate-300 font-semibold px-2 py-1 rounded-lg">
-                ✓ Despachado
+              <Badge variant="outline" className="text-[11px] bg-slate-500/10 text-slate-700 dark:text-slate-300 font-semibold px-2 py-1 rounded-lg flex items-center gap-1">
+                <CheckCircle2 className="size-3 shrink-0" />
+                <span>Despachado</span>
               </Badge>
               <Button
                 size="sm"
@@ -656,7 +658,7 @@ export function KitchenDisplay({ initialOrders }: KitchenDisplayProps) {
           <div className="flex items-center bg-muted/60 p-1 rounded-lg border text-xs">
             <button
               onClick={() => setServiceFilter('all')}
-              className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+              className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
                 serviceFilter === 'all' ? 'bg-card text-foreground shadow-xs font-bold' : 'text-muted-foreground'
               }`}
             >
@@ -664,27 +666,30 @@ export function KitchenDisplay({ initialOrders }: KitchenDisplayProps) {
             </button>
             <button
               onClick={() => setServiceFilter('dine_in')}
-              className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+              className={`px-2.5 py-1 rounded-md font-medium transition-colors inline-flex items-center gap-1 ${
                 serviceFilter === 'dine_in' ? 'bg-card text-foreground shadow-xs font-bold' : 'text-muted-foreground'
               }`}
             >
-              🍽️ Salón
+              <Utensils className="size-3 shrink-0" />
+              <span>Salón</span>
             </button>
             <button
               onClick={() => setServiceFilter('takeaway')}
-              className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+              className={`px-2.5 py-1 rounded-md font-medium transition-colors inline-flex items-center gap-1 ${
                 serviceFilter === 'takeaway' ? 'bg-card text-foreground shadow-xs font-bold' : 'text-muted-foreground'
               }`}
             >
-              🛍️ Llevar
+              <ShoppingBag className="size-3 shrink-0" />
+              <span>Llevar</span>
             </button>
             <button
               onClick={() => setServiceFilter('delivery')}
-              className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+              className={`px-2.5 py-1 rounded-md font-medium transition-colors inline-flex items-center gap-1 ${
                 serviceFilter === 'delivery' ? 'bg-card text-foreground shadow-xs font-bold' : 'text-muted-foreground'
               }`}
             >
-              🛵 Delivery
+              <Bike className="size-3 shrink-0" />
+              <span>Delivery</span>
             </button>
           </div>
 
@@ -703,7 +708,7 @@ export function KitchenDisplay({ initialOrders }: KitchenDisplayProps) {
           <div className="flex items-center bg-muted/60 p-1 rounded-lg border">
             <button
               onClick={() => setViewMode('kanban')}
-              className={`p-1.5 rounded-md transition-all ${
+              className={`p-1.5 rounded-md transition-colors ${
                 viewMode === 'kanban' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
               }`}
               title="Vista Columnas Kanban"
@@ -712,7 +717,7 @@ export function KitchenDisplay({ initialOrders }: KitchenDisplayProps) {
             </button>
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-md transition-all ${
+              className={`p-1.5 rounded-md transition-colors ${
                 viewMode === 'grid' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
               }`}
               title="Vista Cuadrícula Grid"
@@ -728,6 +733,7 @@ export function KitchenDisplay({ initialOrders }: KitchenDisplayProps) {
             onClick={() => setSoundEnabled(!soundEnabled)}
             className={`h-8 w-8 ${soundEnabled ? 'text-primary' : 'text-muted-foreground'}`}
             title={soundEnabled ? 'Alerta sonora de cocina activada' : 'Alerta sonora silenciada'}
+            aria-label={soundEnabled ? 'Silenciar alerta sonora de cocina' : 'Activar alerta sonora de cocina'}
           >
             {soundEnabled ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
           </Button>
@@ -740,6 +746,7 @@ export function KitchenDisplay({ initialOrders }: KitchenDisplayProps) {
             disabled={isRefreshing}
             className="h-8 w-8"
             title="Refrescar comandas"
+            aria-label="Refrescar comandas de cocina"
           >
             <RefreshCw className={`size-4 ${isRefreshing ? 'animate-spin text-primary' : ''}`} />
           </Button>
@@ -751,6 +758,7 @@ export function KitchenDisplay({ initialOrders }: KitchenDisplayProps) {
             onClick={toggleFullscreen}
             className="h-8 w-8"
             title="Modo Pantalla Completa para Cocina"
+            aria-label={isFullscreen ? 'Salir de pantalla completa' : 'Activar pantalla completa para monitor de cocina'}
           >
             {isFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
           </Button>

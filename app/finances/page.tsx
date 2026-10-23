@@ -107,13 +107,17 @@ export default async function FinancesPage() {
   const methodMap = new Map<string, PaymentMethodItem>()
   paymentMethods.forEach((pm) => methodMap.set(pm.id, pm))
 
-  let bankCommissions = 0
+  const bankCommissions = rawPayments.reduce((acc, p) => {
+    const method = methodMap.get(p.payment_method_id)
+    const commPct = method?.commission_percentage || 0
+    const commFixed = method?.commission_fixed || 0
+    return acc + (p.amount * commPct) / 100 + commFixed
+  }, 0)
+
   const enrichedPayments: PaymentTransaction[] = rawPayments.map((p) => {
     const method = methodMap.get(p.payment_method_id)
     const commPct = method?.commission_percentage || 0
     const commFixed = method?.commission_fixed || 0
-    const commission = (p.amount * commPct) / 100 + commFixed
-    bankCommissions += commission
 
     return {
       ...p,

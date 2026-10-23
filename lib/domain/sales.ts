@@ -17,6 +17,9 @@ export interface SalePayment {
   method_name: string
   amount: number
   reference_number?: string | null
+  exchange_rate?: number | null
+  currency?: string | null
+  amount_currency?: number | null
 }
 
 export interface SaleRecord {
@@ -35,6 +38,8 @@ export interface SaleRecord {
   total: number
   items: SaleItem[]
   payments?: SalePayment[]
+  exchange_rate?: number | null
+  total_ves?: number | null
 }
 
 export interface DaySalesGroup {

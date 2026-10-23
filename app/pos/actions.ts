@@ -3,6 +3,54 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { sanitizeText, validateUUID } from '@/lib/security'
+import { getBcvRate } from '@/lib/bcv'
+
+async function insertPaymentSafely(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  payload: {
+    order_id: string
+    payment_method_id: string
+    amount: number
+    reference_number: string
+    exchange_rate: number
+    payment_method_name?: string
+  }
+) {
+  const isVes =
+    (payload.payment_method_name || '').toLowerCase().includes('pago móvil') ||
+    (payload.payment_method_name || '').toLowerCase().includes('bolívares') ||
+    (payload.payment_method_name || '').toLowerCase().includes('punto')
+  const currency = isVes ? 'VES' : 'USD'
+  const amountVes = Number((payload.amount * payload.exchange_rate).toFixed(2))
+
+  const taggedRef = payload.reference_number.includes('Tasa:')
+    ? payload.reference_number
+    : `${payload.reference_number} (Tasa: ${payload.exchange_rate.toFixed(2)})`
+
+  const fullPayload: Record<string, unknown> = {
+    order_id: payload.order_id,
+    payment_method_id: payload.payment_method_id,
+    amount: payload.amount,
+    reference_number: taggedRef,
+    exchange_rate: payload.exchange_rate,
+    currency,
+    amount_currency: isVes ? amountVes : payload.amount,
+    amount_usd: payload.amount,
+    amount_ves: amountVes,
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: fullErr } = await (supabase.from('order_payments') as any).insert(fullPayload)
+  if (fullErr) {
+    // Si falla por columna pendiente de migración en BD, guardar esquema básico con etiqueta en la referencia
+    await supabase.from('order_payments').insert({
+      order_id: payload.order_id,
+      payment_method_id: payload.payment_method_id,
+      amount: payload.amount,
+      reference_number: taggedRef,
+    })
+  }
+}
 
 export interface CartItemInput {
   recipe_id: string
@@ -146,11 +194,14 @@ export async function processOrderAction(data: {
       ? 'POS-EFECTIVO'
       : `REF-${Date.now().toString().slice(-6)}`
 
-    await supabase.from('order_payments').insert({
+    const bcvInfo = await getBcvRate()
+    await insertPaymentSafely(supabase, {
       order_id: orderId,
       payment_method_id: methodId,
       amount: calculatedTotal,
       reference_number: refNumber,
+      exchange_rate: bcvInfo.rate,
+      payment_method_name: data.payment_method_name,
     })
   }
 
@@ -309,17 +360,16 @@ export async function payActiveOrderAction(params: {
     ? 'POS-EFECTIVO'
     : `REF-${Date.now().toString().slice(-6)}`
 
-  // Registrar pago
-  const { error: payErr } = await supabase.from('order_payments').insert({
+  // Registrar pago con tasa de cambio inmutable
+  const bcvInfo = await getBcvRate()
+  await insertPaymentSafely(supabase, {
     order_id: params.orderId,
     payment_method_id: methodId,
     amount: params.total,
     reference_number: refNumber,
+    exchange_rate: bcvInfo.rate,
+    payment_method_name: params.paymentMethodName,
   })
-
-  if (payErr) {
-    console.warn('Advertencia al registrar pago:', payErr.message)
-  }
 
   // Actualizar orden a pagada o crédito y completada
   const validUserId = params.customerId && validateUUID(params.customerId) ? params.customerId : null

@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect } from 'react'
 import { ArrowLeftRight, Loader2, DollarSign, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react'
@@ -17,15 +17,18 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { recordCurrencyExchangeAction } from '@/app/cash-register/actions'
 import { VaultType } from '@/lib/domain/cash-register'
+import { useBcvRate } from '@/lib/hooks/use-bcv-rate'
 
 const VAULT_OPTIONS: { value: VaultType; label: string; currency: 'USD' | 'VES' }[] = [
-  { value: 'cash_usd', label: '💵 Gaveta Efectivo USD ($)', currency: 'USD' },
-  { value: 'cash_ves', label: '🇻🇪 Gaveta Efectivo Bs (Bs.)', currency: 'VES' },
-  { value: 'bank_ves', label: '🏦 Banco Bolívares (Pago Móvil / POS)', currency: 'VES' },
-  { value: 'bank_usd', label: '🌐 Banco Dólares (Zelle / Divisas)', currency: 'USD' },
+  { value: 'cash_usd', label: 'Gaveta Efectivo USD ($)', currency: 'USD' },
+  { value: 'cash_ves', label: 'Gaveta Efectivo Bs (Bs.)', currency: 'VES' },
+  { value: 'bank_ves', label: 'Banco Bolívares (Pago Móvil / POS)', currency: 'VES' },
+  { value: 'bank_usd', label: 'Banco Dólares (Zelle / Divisas)', currency: 'USD' },
 ]
 
-export function CurrencyExchangeDialog({ initialBcvRate = 842.20 }: { initialBcvRate?: number }) {
+export function CurrencyExchangeDialog({ initialBcvRate }: { initialBcvRate?: number }) {
+  const { rate: liveRate } = useBcvRate()
+  const effectiveInitialRate = initialBcvRate || liveRate
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -35,21 +38,16 @@ export function CurrencyExchangeDialog({ initialBcvRate = 842.20 }: { initialBcv
   const [fromVault, setFromVault] = useState<VaultType>('cash_usd')
   const [toVault, setToVault] = useState<VaultType>('bank_ves')
   const [fromAmount, setFromAmount] = useState<string>('')
-  const [exchangeRate, setExchangeRate] = useState<number>(initialBcvRate)
+  const [exchangeRate, setExchangeRate] = useState<number>(effectiveInitialRate)
   const [notes, setNotes] = useState<string>('')
 
-  // Cargar tasa BCV en vivo si está disponible
+  // Sincronizar tasa BCV al abrir si no ha sido modificada manualmente
   useEffect(() => {
-    if (open) {
-      const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
-      fetch(`${basePath}/api/bcv`)
-        .then((r) => r.json())
-        .then((data) => {
-          if (data?.rate) setExchangeRate(data.rate)
-        })
-        .catch(() => {})
+    if (open && liveRate > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setExchangeRate(liveRate)
     }
-  }, [open])
+  }, [open, liveRate])
 
   const fromDef = VAULT_OPTIONS.find((v) => v.value === fromVault) || VAULT_OPTIONS[0]
   const toDef = VAULT_OPTIONS.find((v) => v.value === toVault) || VAULT_OPTIONS[2]

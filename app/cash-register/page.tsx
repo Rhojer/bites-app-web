@@ -7,7 +7,43 @@ import { Button } from '@/components/ui/button'
 import { RecordExpenseDialog } from '@/components/cash-register/record-expense-dialog'
 import { CurrencyExchangeDialog } from '@/components/cash-register/currency-exchange-dialog'
 import { calculateMultiVaultBalances, VaultType } from '@/lib/domain/cash-register'
-import { Wallet, ArrowDownRight, ArrowUpRight, DollarSign, Clock, FileText, CheckCircle2, AlertTriangle, ArrowLeftRight } from 'lucide-react'
+import { getBcvRate } from '@/lib/bcv'
+import { Wallet, ArrowDownRight, ArrowUpRight, DollarSign, Clock, FileText, CheckCircle2, AlertTriangle, ArrowLeftRight, Banknote, Coins, Landmark, Globe } from 'lucide-react'
+
+interface DbPayment {
+  id: string
+  amount: number
+  reference_number?: string | null
+  created_at: string
+  payment_method_id: string
+  vault?: string | null
+  currency?: string | null
+  amount_currency?: number | null
+  exchange_rate?: number | null
+}
+
+interface DbExpense {
+  id: string
+  amount: number
+  created_at: string
+  description?: string | null
+  category?: string | null
+  vault?: string | null
+  currency?: string | null
+}
+
+interface DbExchange {
+  id: string
+  created_at: string
+  from_vault: string
+  to_vault: string
+  from_amount: number
+  from_currency: string
+  to_amount: number
+  to_currency: string
+  exchange_rate: number
+  notes: string | null
+}
 
 export default async function CashRegisterPage() {
   const supabase = await createClient()
@@ -21,13 +57,14 @@ export default async function CashRegisterPage() {
   ] = await Promise.all([
     supabase.from('order_payments').select('*').order('created_at', { ascending: false }),
     supabase.from('expenses').select('*').order('created_at', { ascending: false }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any).from('currency_exchanges').select('*').order('created_at', { ascending: false }),
     supabase.from('payment_methods').select('id, name, currency')
   ])
 
-  const payments: any[] = paymentsData || []
-  const expenses: any[] = expensesData || []
-  const exchanges: any[] = (exchangesData as any[]) || []
+  const payments: DbPayment[] = (paymentsData as unknown as DbPayment[]) || []
+  const expenses: DbExpense[] = (expensesData as unknown as DbExpense[]) || []
+  const exchanges: DbExchange[] = (exchangesData as unknown as DbExchange[]) || []
   const methods = paymentMethodsData || []
 
   const methodMap = new Map<string, { name: string; currency: string | null }>()
@@ -50,8 +87,8 @@ export default async function CashRegisterPage() {
   const formattedExpenses = expenses.map((e) => ({
     id: e.id,
     amount: e.amount,
-    category: e.category,
-    notes: e.description,
+    category: e.category || 'Operativo',
+    notes: e.description || undefined,
     vault: 'cash_usd' as VaultType,
     currency: 'USD',
     created_at: e.created_at,
@@ -66,7 +103,7 @@ export default async function CashRegisterPage() {
     },
     payments: formattedPayments,
     expenses: formattedExpenses,
-    exchanges: exchanges.map((ex: any) => ({
+    exchanges: exchanges.map((ex: DbExchange) => ({
       from_vault: ex.from_vault as VaultType,
       to_vault: ex.to_vault as VaultType,
       from_amount: ex.from_amount,
@@ -77,8 +114,11 @@ export default async function CashRegisterPage() {
       notes: ex.notes,
       created_at: ex.created_at,
     })),
-    currentBcvRate: 842.20,
+    currentBcvRate: (await getBcvRate()).rate,
   })
+
+  const bcvInfo = await getBcvRate()
+  const liveBcvRate = bcvInfo.rate
 
   return (
     <AdminShell>
@@ -87,7 +127,7 @@ export default async function CashRegisterPage() {
         description="Efectivo en gaveta, transferencias bancarias y salidas de dinero justificadas"
         actions={
           <div className="flex items-center gap-2">
-            <CurrencyExchangeDialog />
+            <CurrencyExchangeDialog initialBcvRate={liveBcvRate} />
             <RecordExpenseDialog />
           </div>
         }
@@ -97,7 +137,7 @@ export default async function CashRegisterPage() {
         {/* Total Consolidado en Bóvedas */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border bg-gradient-to-r from-primary/10 via-primary/5 to-transparent gap-3">
           <div>
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <span className="text-xs font-semibold text-muted-foreground">
               Patrimonio Total en Bóvedas (Consolidado)
             </span>
             <p className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-foreground">
@@ -121,7 +161,10 @@ export default async function CashRegisterPage() {
             <CardContent className="p-4 flex items-center justify-between">
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-foreground font-bold">💵 Gaveta Efectivo USD</span>
+                  <span className="text-xs text-foreground font-bold flex items-center gap-1.5">
+                    <Banknote className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span>Gaveta Efectivo USD</span>
+                  </span>
                   <Badge variant="outline" className="text-[9px] px-1 py-0 bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
                     Físico $
                   </Badge>
@@ -144,7 +187,10 @@ export default async function CashRegisterPage() {
             <CardContent className="p-4 flex items-center justify-between">
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-foreground font-bold">🇻🇪 Gaveta Efectivo Bs</span>
+                  <span className="text-xs text-foreground font-bold flex items-center gap-1.5">
+                    <Coins className="size-3.5 text-blue-600 dark:text-blue-400" />
+                    <span>Gaveta Efectivo Bs</span>
+                  </span>
                   <Badge variant="outline" className="text-[9px] px-1 py-0 bg-blue-500/10 text-blue-600 border-blue-500/30">
                     Físico Bs
                   </Badge>
@@ -167,7 +213,10 @@ export default async function CashRegisterPage() {
             <CardContent className="p-4 flex items-center justify-between">
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-foreground font-bold">🏦 Banco Bolívares</span>
+                  <span className="text-xs text-foreground font-bold flex items-center gap-1.5">
+                    <Landmark className="size-3.5 text-amber-600 dark:text-amber-400" />
+                    <span>Banco Bolívares</span>
+                  </span>
                   <Badge variant="outline" className="text-[9px] px-1 py-0 bg-amber-500/10 text-amber-600 border-amber-500/30">
                     Pago Móvil / POS
                   </Badge>
@@ -190,7 +239,10 @@ export default async function CashRegisterPage() {
             <CardContent className="p-4 flex items-center justify-between">
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-foreground font-bold">🌐 Banco USD (Zelle)</span>
+                  <span className="text-xs text-foreground font-bold flex items-center gap-1.5">
+                    <Globe className="size-3.5 text-purple-600 dark:text-purple-400" />
+                    <span>Banco USD (Zelle)</span>
+                  </span>
                   <Badge variant="outline" className="text-[9px] px-1 py-0 bg-purple-500/10 text-purple-600 border-purple-500/30">
                     Digital $
                   </Badge>
@@ -236,7 +288,7 @@ export default async function CashRegisterPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {exchanges.map((ex: any) => (
+                    {exchanges.map((ex: DbExchange) => (
                       <tr key={ex.id} className="hover:bg-muted/30 transition-colors">
                         <td className="py-3 px-4 text-muted-foreground font-mono text-[11px] whitespace-nowrap">
                           {new Date(ex.created_at).toLocaleString()}

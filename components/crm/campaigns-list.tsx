@@ -63,9 +63,9 @@ export function CampaignsList({ campaigns, customers }: CampaignsListProps) {
 
   const audienceLabels: Record<string, { label: string; color: string }> = {
     all: { label: 'Todos los Clientes', color: 'bg-primary/10 text-primary border-primary/20' },
-    birthday: { label: '🎂 Cumpleañeros', color: 'bg-pink-500/10 text-pink-600 border-pink-500/20' },
-    vip: { label: '⭐ Clientes VIP', color: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
-    inactive_30: { label: '👋 Inactivos +30d', color: 'bg-blue-500/10 text-blue-600 border-blue-500/20' },
+    birthday: { label: 'Cumpleañeros del Mes', color: 'bg-pink-500/10 text-pink-600 border-pink-500/20' },
+    vip: { label: 'Clientes VIP', color: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
+    inactive_30: { label: 'Inactivos +30d', color: 'bg-blue-500/10 text-blue-600 border-blue-500/20' },
   }
 
   return (

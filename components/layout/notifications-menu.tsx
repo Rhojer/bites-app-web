@@ -250,6 +250,7 @@ export function NotificationsMenu() {
                   onClick={handleClearAll}
                   className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                   title="Vaciar notificaciones"
+                  aria-label="Vaciar notificaciones"
                 >
                   <Trash2 className="size-3.5" />
                 </Button>

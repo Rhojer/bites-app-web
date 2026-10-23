@@ -364,6 +364,7 @@ export function CreateRecipeDialog({
                             size="icon-xs"
                             onClick={() => removeIngredientRow(idx)}
                             className="text-muted-foreground hover:text-destructive"
+                            aria-label="Quitar ingrediente"
                           >
                             <Trash2 className="size-3.5" />
                           </Button>
@@ -460,6 +461,7 @@ export function CreateRecipeDialog({
                           size="icon-xs"
                           onClick={() => removeSubRecipeRow(idx)}
                           className="text-muted-foreground hover:text-destructive"
+                          aria-label="Quitar sub-receta"
                         >
                           <Trash2 className="size-3.5" />
                         </Button>

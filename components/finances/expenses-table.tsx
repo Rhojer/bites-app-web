@@ -237,6 +237,7 @@ export function ExpensesTable({ expenses }: ExpensesTableProps) {
                           disabled={deletingId === exp.id}
                           onClick={() => handleDelete(exp.id)}
                           title="Eliminar gasto"
+                          aria-label="Eliminar gasto"
                         >
                           <Trash2 className="size-3.5" />
                         </Button>

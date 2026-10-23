@@ -32,7 +32,7 @@ const MORE_MODULES = [
   { name: 'Menú y Costos', href: '/recipes', icon: UtensilsCrossed, desc: 'Platos, recetas y escandallos' },
   { name: 'Inventario', href: '/inventory', icon: Boxes, desc: 'Existencias y registro de mermas' },
   { name: 'Finanzas', href: '/finances', icon: TrendingDown, desc: 'P&L, proveedores y utilidades' },
-  { name: 'Ajustes', href: '/settings', icon: Settings, desc: 'Configuración general' },
+  { name: 'Ajustes', href: '/settings', icon: Settings, desc: 'Configuración general (Próximamente)' },
 ]
 
 export function BottomNav() {
@@ -52,7 +52,7 @@ export function BottomNav() {
             <Link
               key={tab.name}
               href={tab.href}
-              className={`flex flex-col items-center justify-center flex-1 h-full py-1 text-xs font-semibold transition-all duration-150 active:scale-95 touch-manipulation min-h-[48px] ${
+              className={`flex flex-col items-center justify-center flex-1 h-full py-1 text-xs font-semibold transition-colors duration-150 active:scale-95 touch-manipulation min-h-[48px] ${
                 isActive
                   ? 'text-primary'
                   : 'text-muted-foreground hover:text-foreground'
@@ -76,7 +76,7 @@ export function BottomNav() {
             render={
               <button
                 type="button"
-                className={`flex flex-col items-center justify-center flex-1 h-full py-1 text-xs font-semibold transition-all duration-150 active:scale-95 touch-manipulation min-h-[48px] ${
+                className={`flex flex-col items-center justify-center flex-1 h-full py-1 text-xs font-semibold transition-colors duration-150 active:scale-95 touch-manipulation min-h-[48px] ${
                   isMoreActive
                     ? 'text-primary'
                     : 'text-muted-foreground hover:text-foreground'
@@ -106,7 +106,7 @@ export function BottomNav() {
                     key={mod.name}
                     href={mod.href}
                     onClick={() => setMoreOpen(false)}
-                    className={`flex items-center gap-3.5 p-3 rounded-2xl border transition-all active:scale-[0.98] ${
+                    className={`flex items-center gap-3.5 p-3 rounded-2xl border transition-colors active:scale-[0.98] ${
                       isActive
                         ? 'bg-primary/10 border-primary text-primary font-bold'
                         : 'bg-card border-border hover:bg-muted/50 text-foreground'

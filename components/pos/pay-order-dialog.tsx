@@ -11,10 +11,11 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Banknote, CreditCard, Smartphone, CheckCircle2, Loader2, AlertCircle, Coins } from 'lucide-react'
+import { Banknote, CreditCard, Smartphone, CheckCircle2, Loader2, AlertCircle, Coins, Landmark, UserCheck } from 'lucide-react'
 import { payActiveOrderAction } from '@/app/pos/actions'
 import { formatBs, convertUsdToBs } from '@/lib/bcv'
 import { CustomerSelector, CustomerOption } from '@/components/pos/customer-selector'
+import { useBcvRate } from '@/lib/hooks/use-bcv-rate'
 
 interface PayOrderDialogProps {
   order: {
@@ -45,22 +46,13 @@ export function PayOrderDialog({
   const [customerName, setCustomerName] = useState('')
   const [referenceNumber, setReferenceNumber] = useState('')
   const [cashTendered, setCashTendered] = useState('')
-  const [bcvRate, setBcvRate] = useState(813.74)
+  const { rate: bcvRate } = useBcvRate()
   const [loading, setLoading] = useState(false)
   const [refError, setRefError] = useState('')
 
   useEffect(() => {
-    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
-    fetch(`${basePath}/api/bcv`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data?.rate) setBcvRate(data.rate)
-      })
-      .catch(() => {})
-  }, [open])
-
-  useEffect(() => {
     if (order) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedCustomerId(order.customer_id || null)
       setCustomerName(order.customer_name || '')
     }
@@ -155,12 +147,12 @@ export function PayOrderDialog({
             <label className="font-semibold text-foreground">Seleccionar Método de Pago:</label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {[
-                { name: 'Efectivo USD', icon: Banknote, label: '💵 Efectivo $' },
-                { name: 'Efectivo Bs', icon: Banknote, label: '🇻🇪 Efectivo Bs' },
-                { name: 'Pago Móvil', icon: Smartphone, label: '🏦 Pago Móvil' },
-                { name: 'Punto de Venta / Tarjeta', icon: CreditCard, label: '💳 Punto / Tarjeta' },
-                { name: 'Zelle', icon: Smartphone, label: '📱 Zelle ($)' },
-                { name: 'Crédito', icon: Coins, label: '👥 Venta Crédito', highlight: true },
+                { name: 'Efectivo USD', icon: Banknote, label: 'Efectivo USD ($)' },
+                { name: 'Efectivo Bs', icon: Coins, label: 'Efectivo Bs.' },
+                { name: 'Pago Móvil', icon: Smartphone, label: 'Pago Móvil' },
+                { name: 'Punto de Venta / Tarjeta', icon: CreditCard, label: 'Punto / Tarjeta' },
+                { name: 'Zelle', icon: Landmark, label: 'Zelle ($)' },
+                { name: 'Crédito', icon: UserCheck, label: 'Venta Crédito', highlight: true },
               ].map((m) => (
                 <button
                   key={m.name}
@@ -170,7 +162,7 @@ export function PayOrderDialog({
                     setRefError('')
                     setCashTendered('')
                   }}
-                  className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-semibold transition-all active:scale-95 ${
+                  className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-semibold transition-colors active:scale-95 ${
                     paymentMethod === m.name
                       ? 'border-primary bg-primary text-primary-foreground shadow-xs'
                       : m.highlight

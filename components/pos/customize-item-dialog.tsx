@@ -68,6 +68,7 @@ export function CustomizeItemDialog({
   useEffect(() => {
     if (item && open) {
       // Si el ítem tiene quantity > 1, sugerir por defecto 'single' para no alterar todas
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setApplyMode(item.quantity > 1 ? 'single' : 'all')
 
       // Detectar notas previas del ítem para inicializar exclusiones

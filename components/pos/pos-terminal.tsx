@@ -23,7 +23,10 @@ import {
   Tag,
   Coins,
   SlidersHorizontal,
-  Scissors
+  Scissors,
+  Bike,
+  Utensils,
+  AlertTriangle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -44,6 +47,7 @@ import { ButtonGroup, ButtonGroupItem } from '@/components/ui/button-group'
 import { MobileCartDrawer } from '@/components/pos/mobile-cart-drawer'
 import { addItemToCart, splitCartItem, customizeCartItem } from '@/lib/domain/pos'
 import { CustomizeItemDialog } from '@/components/pos/customize-item-dialog'
+import { useBcvRate } from '@/lib/hooks/use-bcv-rate'
 
 interface RecipeItem {
   id: string
@@ -115,20 +119,9 @@ export function PosTerminal({
   const [referenceNumber, setReferenceNumber] = useState('')
   const [refError, setRefError] = useState('')
   const [cashTendered, setCashTendered] = useState<string>('')
-  const [bcvRate, setBcvRate] = useState(813.74)
+  const { rate: bcvRate } = useBcvRate()
   const [loading, setLoading] = useState(false)
   const [successOrderNumber, setSuccessOrderNumber] = useState<string | null>(null)
-
-  // Cargar tasa BCV
-  useState(() => {
-    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
-    fetch(`${basePath}/api/bcv`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data?.rate) setBcvRate(data.rate)
-      })
-      .catch(() => {})
-  })
 
   const finalRecipes = recipes.filter((r) => r.type === 'final_product')
   const categories = Array.from(new Set(finalRecipes.map((r) => r.category || 'General')))
@@ -329,27 +322,27 @@ export function PosTerminal({
 
               {/* Quantity Controls & Splitting */}
               <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 bg-muted/50 p-1 rounded-lg border">
+                <div className="flex items-center gap-1.5 bg-muted/50 p-1 rounded-xl border">
                   <Button
-                    size="icon-xs"
+                    size="icon-sm"
                     variant="ghost"
                     onClick={() => updateQuantity(item.id, -1)}
-                    className="size-8 rounded-md hover:bg-card text-foreground"
+                    className="size-9 rounded-lg hover:bg-card text-foreground touch-manipulation min-w-[36px] min-h-[36px]"
                     aria-label="Disminuir cantidad"
                   >
-                    <Minus className="size-3.5" />
+                    <Minus className="size-4" />
                   </Button>
-                  <span className="w-8 text-center font-mono font-bold text-xs text-foreground">
+                  <span className="w-8 text-center font-bold text-xs text-foreground tabular-nums">
                     {item.quantity}
                   </span>
                   <Button
-                    size="icon-xs"
+                    size="icon-sm"
                     variant="ghost"
                     onClick={() => updateQuantity(item.id, 1)}
-                    className="size-8 rounded-md hover:bg-card text-foreground"
+                    className="size-9 rounded-lg hover:bg-card text-foreground touch-manipulation min-w-[36px] min-h-[36px]"
                     aria-label="Aumentar cantidad"
                   >
-                    <Plus className="size-3.5" />
+                    <Plus className="size-4" />
                   </Button>
                 </div>
 
@@ -358,13 +351,14 @@ export function PosTerminal({
                   {item.quantity > 1 && (
                     <Button
                       type="button"
-                      size="xs"
+                      size="sm"
                       variant="outline"
                       onClick={() => handleSplitItem(item.id)}
-                      className="h-7 px-2 text-[11px] font-semibold text-primary hover:bg-primary/10 border-primary/30 gap-1 rounded-lg"
+                      className="h-8 px-2.5 text-xs font-semibold text-primary hover:bg-primary/10 border-primary/30 gap-1.5 rounded-lg touch-manipulation"
                       title="Separa 1 unidad en otra fila para personalizarla por separado"
+                      aria-label="Separar 1 unidad"
                     >
-                      <Scissors className="size-3" />
+                      <Scissors className="size-3.5" />
                       <span>Separar 1</span>
                     </Button>
                   )}
@@ -372,22 +366,23 @@ export function PosTerminal({
                   {/* Botón para personalizar / quitar ingredientes */}
                   <Button
                     type="button"
-                    size="xs"
+                    size="sm"
                     variant={item.notes ? 'default' : 'outline'}
                     onClick={() => setCustomizingItem(item)}
-                    className={`h-7 px-2 text-[11px] font-semibold gap-1 rounded-lg transition-colors ${
+                    className={`h-8 px-2.5 text-xs font-semibold gap-1.5 rounded-lg transition-colors touch-manipulation ${
                       item.notes
                         ? 'bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-2xs'
                         : 'text-muted-foreground hover:text-foreground'
                     }`}
                     title="Personalizar o quitar ingredientes de este plato"
+                    aria-label="Personalizar ingredientes"
                   >
-                    <SlidersHorizontal className="size-3" />
+                    <SlidersHorizontal className="size-3.5" />
                     <span>{item.notes ? 'Modificado' : 'Personalizar'}</span>
                   </Button>
                 </div>
 
-                <span className="text-[11px] font-mono text-muted-foreground shrink-0">
+                <span className="text-xs font-semibold tabular-nums text-muted-foreground shrink-0">
                   ${item.unit_price.toFixed(2)} c/u
                 </span>
               </div>
@@ -396,16 +391,17 @@ export function PosTerminal({
               {item.notes && (
                 <div className="flex items-center justify-between p-2 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-900 dark:text-amber-200 text-xs font-semibold">
                   <span className="flex items-center gap-1.5 truncate">
-                    <span>⚠️</span>
+                    <AlertTriangle className="size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
                     <span className="truncate">{item.notes}</span>
                   </span>
                   <button
                     type="button"
                     onClick={() => updateNotes(item.id, '')}
-                    className="text-[11px] text-muted-foreground hover:text-destructive shrink-0 ml-2"
+                    className="p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0 ml-2 touch-manipulation"
                     title="Restablecer a estándar"
+                    aria-label="Restablecer notas culinarias"
                   >
-                    ✕
+                    <X className="size-3.5" />
                   </button>
                 </div>
               )}
@@ -474,25 +470,28 @@ export function PosTerminal({
               <ButtonGroupItem
                 active={orderType === 'dine_in'}
                 onClick={() => setOrderType('dine_in')}
-                className="py-2 px-3 text-xs gap-1.5"
+                className="py-2.5 px-3.5 text-xs font-semibold gap-1.5 touch-manipulation"
+                aria-label="Servicio en Salón"
               >
-                <span>🍽️</span>
+                <Utensils className="size-3.5 text-primary" aria-hidden="true" />
                 <span>Salón</span>
               </ButtonGroupItem>
               <ButtonGroupItem
                 active={orderType === 'takeaway'}
                 onClick={() => setOrderType('takeaway')}
-                className="py-2 px-3 text-xs gap-1.5"
+                className="py-2.5 px-3.5 text-xs font-semibold gap-1.5 touch-manipulation"
+                aria-label="Para Llevar"
               >
-                <span>🛍️</span>
+                <ShoppingBag className="size-3.5 text-primary" aria-hidden="true" />
                 <span>Llevar</span>
               </ButtonGroupItem>
               <ButtonGroupItem
                 active={orderType === 'delivery'}
                 onClick={() => setOrderType('delivery')}
-                className="py-2 px-3 text-xs gap-1.5"
+                className="py-2.5 px-3.5 text-xs font-semibold gap-1.5 touch-manipulation"
+                aria-label="Servicio Delivery"
               >
-                <span>🛵</span>
+                <Bike className="size-3.5 text-primary" aria-hidden="true" />
                 <span>Delivery</span>
               </ButtonGroupItem>
             </ButtonGroup>

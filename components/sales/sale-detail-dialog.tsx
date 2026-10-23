@@ -37,7 +37,7 @@ export function SaleDetailDialog({
   sale,
   open,
   onOpenChange,
-  bcvRate = 813.74,
+  bcvRate = 886.22,
 }: SaleDetailDialogProps) {
   if (!sale) return null
 
@@ -45,7 +45,8 @@ export function SaleDetailDialog({
   const isCredit = sale.payment_status === 'credit'
   const isPaid = sale.payment_status === 'paid'
   const isPending = sale.payment_status === 'pending'
-  const totalBs = convertUsdToBs(sale.total, bcvRate)
+  const effectiveRate = sale.exchange_rate && sale.exchange_rate > 0 ? sale.exchange_rate : bcvRate
+  const totalBs = sale.total_ves || convertUsdToBs(sale.total, effectiveRate)
   const timeFormatted = formatSaleTime(sale.created_at)
 
   const dateObj = new Date(sale.created_at)
@@ -249,7 +250,7 @@ export function SaleDetailDialog({
                   ${sale.total.toFixed(2)}
                 </span>
                 <span className="font-mono text-xs font-semibold text-muted-foreground">
-                  {formatBs(totalBs)} (Tasa: {bcvRate.toFixed(2)})
+                  {formatBs(totalBs)} ({sale.exchange_rate ? `Tasa cobrada: ${effectiveRate.toFixed(2)}` : `Tasa ref.: ${effectiveRate.toFixed(2)}`})
                 </span>
               </div>
             </div>

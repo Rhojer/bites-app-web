@@ -64,6 +64,7 @@ export async function recordCurrencyExchangeAction(params: {
     throw new Error('La bóveda de origen y destino deben ser distintas.')
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any).from('currency_exchanges').insert({
     from_vault: params.from_vault,
     to_vault: params.to_vault,

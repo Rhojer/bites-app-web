@@ -31,7 +31,11 @@ import {
   ChefHat,
   MapPin,
   Phone,
-  User
+  User,
+  Bike,
+  Utensils,
+  AlertTriangle,
+  X
 } from 'lucide-react'
 import { processOrderAction, CartItemInput } from '@/app/pos/actions'
 import { formatBs, convertUsdToBs } from '@/lib/bcv'
@@ -39,6 +43,7 @@ import { CustomerSelector, CustomerOption } from '@/components/pos/customer-sele
 import { ButtonGroup, ButtonGroupItem } from '@/components/ui/button-group'
 import { addItemToCart, splitCartItem, customizeCartItem } from '@/lib/domain/pos'
 import { CustomizeItemDialog } from '@/components/pos/customize-item-dialog'
+import { useBcvRate } from '@/lib/hooks/use-bcv-rate'
 
 interface RecipeItem {
   id: string
@@ -93,7 +98,7 @@ export function NewOrderDialog({
 
   // Modal de personalización de ingredientes
   const [customizingItem, setCustomizingItem] = useState<CartItem | null>(null)
-  const [bcvRate, setBcvRate] = useState(813.74)
+  const { rate: bcvRate } = useBcvRate()
   const [loading, setLoading] = useState(false)
   const assignScrollRef = useRef<HTMLDivElement>(null)
 
@@ -103,15 +108,7 @@ export function NewOrderDialog({
     }
   }, [step])
 
-  useEffect(() => {
-    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
-    fetch(`${basePath}/api/bcv`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data?.rate) setBcvRate(data.rate)
-      })
-      .catch(() => {})
-  }, [open])
+
 
   const finalRecipes = recipes.filter((r) => r.type === 'final_product')
   const categories = Array.from(new Set(finalRecipes.map((r) => r.category || 'General')))
@@ -271,23 +268,26 @@ export function NewOrderDialog({
                     <ButtonGroupItem
                       active={orderType === 'dine_in'}
                       onClick={() => setOrderType('dine_in')}
-                      className="py-1 px-1.5 text-xs font-bold"
+                      className="py-1 px-1.5 text-xs font-bold inline-flex items-center justify-center gap-1"
                     >
-                      🍽️ Salón
+                      <Utensils className="size-3 shrink-0" />
+                      <span>Salón</span>
                     </ButtonGroupItem>
                     <ButtonGroupItem
                       active={orderType === 'takeaway'}
                       onClick={() => setOrderType('takeaway')}
-                      className="py-1 px-1.5 text-xs font-bold"
+                      className="py-1 px-1.5 text-xs font-bold inline-flex items-center justify-center gap-1"
                     >
-                      🛍️ Llevar
+                      <ShoppingBag className="size-3 shrink-0" />
+                      <span>Llevar</span>
                     </ButtonGroupItem>
                     <ButtonGroupItem
                       active={orderType === 'delivery'}
                       onClick={() => setOrderType('delivery')}
-                      className="py-1 px-1.5 text-xs font-bold"
+                      className="py-1 px-1.5 text-xs font-bold inline-flex items-center justify-center gap-1"
                     >
-                      🛵 Delivery
+                      <Bike className="size-3 shrink-0" />
+                      <span>Delivery</span>
                     </ButtonGroupItem>
                   </ButtonGroup>
 
@@ -547,17 +547,18 @@ export function NewOrderDialog({
                         {/* Etiqueta de notas culinarias si existen */}
                         {item.notes && (
                           <div className="flex items-center justify-between p-1.5 px-2 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-900 dark:text-amber-200 text-[11px] font-semibold">
-                            <span className="flex items-center gap-1 truncate">
-                              <span>⚠️</span>
+                            <span className="flex items-center gap-1.5 truncate">
+                              <AlertTriangle className="size-3 shrink-0 text-amber-600 dark:text-amber-400" />
                               <span className="truncate">{item.notes}</span>
                             </span>
                             <button
                               type="button"
                               onClick={() => updateItemNotes(item.id, '')}
-                              className="text-[10px] text-muted-foreground hover:text-destructive shrink-0 ml-1.5"
+                              className="text-muted-foreground hover:text-destructive shrink-0 ml-1.5 p-0.5 rounded touch-manipulation"
                               title="Restablecer a estándar"
+                              aria-label="Restablecer nota de cocina"
                             >
-                              ✕
+                              <X className="size-3" />
                             </button>
                           </div>
                         )}
@@ -647,8 +648,23 @@ export function NewOrderDialog({
                 </button>
 
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs font-bold">
-                    {orderType === 'dine_in' ? '🍽️ Salón' : orderType === 'takeaway' ? '🛍️ Para Llevar' : '🛵 Delivery'}
+                  <Badge variant="outline" className="text-xs font-bold inline-flex items-center gap-1">
+                    {orderType === 'dine_in' ? (
+                      <>
+                        <Utensils className="size-3" />
+                        <span>Salón</span>
+                      </>
+                    ) : orderType === 'takeaway' ? (
+                      <>
+                        <ShoppingBag className="size-3" />
+                        <span>Para Llevar</span>
+                      </>
+                    ) : (
+                      <>
+                        <Bike className="size-3" />
+                        <span>Delivery</span>
+                      </>
+                    )}
                   </Badge>
                   <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
                     ${total.toFixed(2)} ({formatBs(totalBs)})

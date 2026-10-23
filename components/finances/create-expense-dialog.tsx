@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Loader2, DollarSign, Calendar, Tag, FileSpreadsheet } from 'lucide-react'
+import { Plus, Loader2, DollarSign, Calendar, Tag, FileSpreadsheet, Building2, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -98,14 +98,17 @@ export function CreateExpenseDialog() {
                 <button
                   type="button"
                   onClick={() => setExpenseType('fixed')}
-                  className={`p-2.5 rounded-lg border text-left transition-all ${
+                  className={`p-2.5 rounded-lg border text-left transition-colors ${
                     expenseType === 'fixed'
                       ? 'border-primary bg-primary/10 text-foreground font-semibold shadow-xs'
                       : 'border-input bg-card text-muted-foreground hover:bg-muted/40'
                   }`}
                 >
-                  <p className="text-xs">🏢 Gasto Fijo</p>
-                  <p className="text-[10px] text-muted-foreground font-normal">
+                  <p className="text-xs font-semibold inline-flex items-center gap-1.5">
+                    <Building2 className="size-3.5 text-primary" />
+                    <span>Gasto Fijo</span>
+                  </p>
+                  <p className="text-[10px] text-muted-foreground font-normal mt-0.5">
                     Alquiler, nómina, luz, agua, licencias
                   </p>
                 </button>
@@ -113,14 +116,17 @@ export function CreateExpenseDialog() {
                 <button
                   type="button"
                   onClick={() => setExpenseType('variable')}
-                  className={`p-2.5 rounded-lg border text-left transition-all ${
+                  className={`p-2.5 rounded-lg border text-left transition-colors ${
                     expenseType === 'variable'
                       ? 'border-primary bg-primary/10 text-foreground font-semibold shadow-xs'
                       : 'border-input bg-card text-muted-foreground hover:bg-muted/40'
                   }`}
                 >
-                  <p className="text-xs">⚡ Gasto Variable</p>
-                  <p className="text-[10px] text-muted-foreground font-normal">
+                  <p className="text-xs font-semibold inline-flex items-center gap-1.5">
+                    <Zap className="size-3.5 text-amber-500" />
+                    <span>Gasto Variable</span>
+                  </p>
+                  <p className="text-[10px] text-muted-foreground font-normal mt-0.5">
                     Mantenimiento, marketing, fletes, etc.
                   </p>
                 </button>

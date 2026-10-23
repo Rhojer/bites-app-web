@@ -28,6 +28,12 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -65,6 +71,12 @@
   --accent: oklch(0.95 0.03 85);
   --accent-foreground: oklch(0.16 0.02 260);
   --destructive: oklch(0.58 0.22 27);
+  --success: oklch(0.62 0.17 145);
+  --success-foreground: oklch(0.98 0.01 145);
+  --warning: oklch(0.75 0.17 75);
+  --warning-foreground: oklch(0.18 0.04 75);
+  --info: oklch(0.60 0.16 245);
+  --info-foreground: oklch(0.98 0.01 245);
   --border: oklch(0.92 0.005 260);
   --input: oklch(0.92 0.005 260);
   --ring: oklch(0.79 0.175 80);
@@ -100,6 +112,12 @@
   --accent: oklch(0.23 0.03 85);
   --accent-foreground: oklch(0.98 0.005 260);
   --destructive: oklch(0.65 0.2 25);
+  --success: oklch(0.68 0.17 145);
+  --success-foreground: oklch(0.12 0.02 145);
+  --warning: oklch(0.78 0.17 75);
+  --warning-foreground: oklch(0.14 0.04 75);
+  --info: oklch(0.66 0.16 245);
+  --info-foreground: oklch(0.12 0.02 245);
   --border: oklch(0.24 0.015 260);
   --input: oklch(0.24 0.015 260);
   --ring: oklch(0.82 0.175 82);
@@ -187,4 +205,13 @@
 
 .logo-glow {
   filter: drop-shadow(0 0 16px rgba(245, 158, 11, 0.55));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

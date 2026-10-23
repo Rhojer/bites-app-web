@@ -19,10 +19,14 @@ import {
   CheckCircle2,
   AlertCircle,
   Coins,
-  FileText
+  FileText,
+  Utensils,
+  ShoppingBag,
+  Bike
 } from 'lucide-react'
 import { ActiveOrder } from '@/components/pos/active-orders-list'
 import { formatBs, convertUsdToBs } from '@/lib/bcv'
+import { useBcvRate } from '@/lib/hooks/use-bcv-rate'
 
 interface OrderDetailDialogProps {
   order: ActiveOrder | null
@@ -37,16 +41,19 @@ export function OrderDetailDialog({
   open,
   onOpenChange,
   onPay,
-  bcvRate = 813.74,
+  bcvRate,
 }: OrderDetailDialogProps) {
+  const { rate: liveBcvRate } = useBcvRate()
   if (!order) return null
 
+  const effectiveRate = bcvRate || liveBcvRate
   const isUnpaid = order.payment_status === 'pending'
   const isCredit = order.payment_status === 'credit'
   const isPaid = order.payment_status === 'paid'
-  const totalBs = convertUsdToBs(order.total, bcvRate)
+  const totalBs = convertUsdToBs(order.total, effectiveRate)
 
   function getElapsedMinutes(createdAt: string) {
+    // eslint-disable-next-line react-hooks/purity
     const diffMs = Date.now() - new Date(createdAt).getTime()
     return Math.floor(diffMs / 60000)
   }
@@ -81,9 +88,26 @@ export function OrderDetailDialog({
             </div>
           </div>
           <DialogDescription className="text-xs text-muted-foreground flex items-center justify-between pt-1">
-            <span>
-              {order.type === 'dine_in' ? '🍽️ Salón' : order.type === 'takeaway' ? '🛍️ Para Llevar' : '🛵 Delivery'}
-              {' • '}
+            <span className="inline-flex items-center gap-1.5">
+              <span className="inline-flex items-center gap-1">
+                {order.type === 'dine_in' ? (
+                  <>
+                    <Utensils className="size-3" />
+                    <span>Salón</span>
+                  </>
+                ) : order.type === 'takeaway' ? (
+                  <>
+                    <ShoppingBag className="size-3" />
+                    <span>Para Llevar</span>
+                  </>
+                ) : (
+                  <>
+                    <Bike className="size-3" />
+                    <span>Delivery</span>
+                  </>
+                )}
+              </span>
+              <span>•</span>
               <strong className="text-foreground">
                 {order.customer_name || (order.table_number ? `Mesa ${order.table_number}` : 'Cliente')}
               </strong>

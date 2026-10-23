@@ -235,20 +235,20 @@ export function CreateCampaignDialog({
                   <select
                     id="target_audience"
                     value={targetAudience}
-                    onChange={(e) => setTargetAudience(e.target.value as any)}
+                    onChange={(e) => setTargetAudience(e.target.value as 'all' | 'birthday' | 'inactive_30' | 'vip')}
                     className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
                     <option value="all" className="bg-popover text-popover-foreground">
-                      👥 Todos los Clientes ({customers.length})
+                      Todos los Clientes ({customers.length})
                     </option>
                     <option value="birthday" className="bg-popover text-popover-foreground">
-                      🎂 Cumpleañeros del Mes
+                      Cumpleañeros del Mes
                     </option>
                     <option value="vip" className="bg-popover text-popover-foreground">
-                      ⭐ Clientes VIP (+100$ o +5 visitas)
+                      Clientes VIP (+100$ o +5 visitas)
                     </option>
                     <option value="inactive_30" className="bg-popover text-popover-foreground">
-                      👋 Clientes Inactivos (+30 días)
+                      Clientes Inactivos (+30 días)
                     </option>
                   </select>
                 </div>
@@ -258,17 +258,17 @@ export function CreateCampaignDialog({
                   <select
                     id="channel"
                     value={channel}
-                    onChange={(e) => setChannel(e.target.value as any)}
+                    onChange={(e) => setChannel(e.target.value as 'whatsapp' | 'sms' | 'email')}
                     className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
                     <option value="whatsapp" className="bg-popover text-popover-foreground">
-                      📱 WhatsApp Mensaje
+                      WhatsApp Mensaje Directo
                     </option>
                     <option value="sms" className="bg-popover text-popover-foreground">
-                      💬 SMS Notificación
+                      SMS Mensaje de Texto
                     </option>
                     <option value="email" className="bg-popover text-popover-foreground">
-                      ✉️ Correo Electrónico
+                      Correo Electrónico (Email)
                     </option>
                   </select>
                 </div>

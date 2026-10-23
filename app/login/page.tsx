@@ -45,6 +45,7 @@ function LoginFormContent() {
     try {
       const savedUser = localStorage.getItem('bites_saved_username')
       if (savedUser) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setUsernameOrEmail(savedUser)
       }
     } catch {
@@ -192,7 +193,7 @@ function LoginFormContent() {
 
   return (
     <main
-      className="min-h-screen w-full flex flex-col lg:flex-row bg-crumpled-paper relative overflow-hidden items-center justify-between"
+      className="min-h-dvh w-full flex flex-col lg:flex-row bg-crumpled-paper relative overflow-hidden items-center justify-between"
       style={{ backgroundColor: '#10131B' }}
     >
       {/* Fondo de fotografía de street food y texturas */}
@@ -231,7 +232,7 @@ function LoginFormContent() {
       {/* ======================================================== */}
       <section
         aria-label="BITES Street Food Branding"
-        className="relative z-10 flex-1 flex flex-col justify-between p-6 sm:p-10 lg:p-16 xl:p-20 w-full min-h-[auto] lg:min-h-screen"
+        className="relative z-10 flex-1 flex flex-col justify-between p-6 sm:p-10 lg:p-16 xl:p-20 w-full min-h-[auto] lg:min-h-dvh"
       >
         {/* Encabezado superior de marca (Izquierda) */}
         <div className="flex items-center justify-start gap-3 w-full">
@@ -286,7 +287,7 @@ function LoginFormContent() {
         {/* Chips de Estado en Tiempo Real (Inferior, alineados a la izquierda en desktop) */}
         <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 sm:gap-6 pt-6 border-t border-neutral-800/80 text-xs text-neutral-400">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-neutral-900/80 border border-neutral-800 backdrop-blur-sm shadow-xs">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse" />
+            <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
             <span className="font-medium text-neutral-200 tracking-wide text-[11px] sm:text-xs">
               Terminal en Línea
             </span>
@@ -739,7 +740,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#10131B] flex items-center justify-center text-amber-400">
+        <div className="min-h-dvh bg-[#10131B] flex items-center justify-center text-amber-400">
           <Loader2 className="size-8 animate-spin" />
         </div>
       }

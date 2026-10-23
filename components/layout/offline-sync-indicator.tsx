@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useState } from 'react'
 import { Wifi, WifiOff, RefreshCw } from 'lucide-react'
@@ -57,7 +57,7 @@ export function OfflineSyncIndicator() {
       variant="outline"
       className="hidden md:inline-flex items-center gap-1.5 py-1 px-2.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-xs font-medium"
     >
-      <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+      <span className="size-2 rounded-full bg-emerald-500" />
       <span>En línea</span>
     </Badge>
   )

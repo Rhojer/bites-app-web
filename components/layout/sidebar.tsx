@@ -71,6 +71,7 @@ export const navigationItems = [
     name: 'Ajustes',
     href: '/settings',
     icon: Settings,
+    badge: 'Próx.',
   },
 ]
 
@@ -133,7 +134,7 @@ export function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
               key={item.name}
               href={item.href}
               onClick={onItemClick}
-              className={`flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-medium transition-all duration-150 active:scale-[0.98] ${
+              className={`flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-medium transition-colors duration-150 active:scale-[0.98] ${
                 isActive
                   ? 'bg-primary text-primary-foreground shadow-xs font-semibold'
                   : 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'
@@ -143,6 +144,18 @@ export function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
                 <item.icon className={`size-5 shrink-0 ${isActive ? 'text-primary-foreground' : 'text-muted-foreground'}`} />
                 <span className="font-semibold text-sm tracking-tight">{item.name}</span>
               </div>
+              {item.badge && (
+                <Badge
+                  variant="outline"
+                  className={`text-[9px] px-1.5 py-0 font-bold ${
+                    isActive
+                      ? 'bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30'
+                      : 'bg-muted text-muted-foreground border-border/50'
+                  }`}
+                >
+                  {item.badge}
+                </Badge>
+              )}
             </Link>
           )
         })}
@@ -180,7 +193,7 @@ export function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
         {/* Estado del Sistema */}
         <div className="px-2 pt-0.5 flex items-center justify-between text-[11px] text-muted-foreground">
           <span className="flex items-center gap-1.5 font-medium">
-            <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="size-2 rounded-full bg-emerald-500" />
             Sistema en línea
           </span>
           <span className="text-[10px] text-muted-foreground/60">v1.0</span>
@@ -192,7 +205,7 @@ export function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
 
 export function Sidebar() {
   return (
-    <aside className="hidden md:flex w-64 border-r bg-card flex-col shrink-0 h-screen sticky top-0 z-20">
+    <aside className="hidden md:flex w-64 border-r bg-card flex-col shrink-0 h-dvh sticky top-0 z-20">
       <SidebarContent />
     </aside>
   )
