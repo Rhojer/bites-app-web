@@ -14,7 +14,11 @@ export default async function RecipesPage() {
     { data: recipeIngredientsData },
     { data: recipeSubRecipesData }
   ] = await Promise.all([
-    supabase.from('recipes').select('*').order('created_at', { ascending: false }),
+    supabase
+      .from('recipes')
+      .select('*')
+      .or('is_published.is.null,is_published.eq.true')
+      .order('created_at', { ascending: false }),
     supabase.from('ingredients').select('*'),
     supabase.from('recipe_ingredients').select('*'),
     supabase.from('recipe_sub_recipes').select('*')

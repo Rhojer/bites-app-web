@@ -11,9 +11,9 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(() => Promise.resolve(mockSupabase)),
 }))
 
-import { createRecipeAction } from '@/app/recipes/actions'
+import { createRecipeAction, deleteRecipeAction } from '@/app/recipes/actions'
 
-describe('Integration: Creación de Recetas y Sub-recetas', () => {
+describe('Integration: Creación y Eliminación de Recetas y Sub-recetas', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockSupabase = createMockSupabaseClient({
@@ -62,5 +62,43 @@ describe('Integration: Creación de Recetas y Sub-recetas', () => {
     const recipeSubRecipes = mockSupabase._dataStore['recipe_sub_recipes']
     expect(recipeSubRecipes).toHaveLength(1)
     expect(recipeSubRecipes[0].child_recipe_id).toBe('sub-salsa-chimichurri')
+  })
+
+  it('debe eliminar exitosamente una receta y desvincular sus ingredientes y sub-recetas', async () => {
+    // Inicializar mock con una receta
+    mockSupabase._dataStore['recipes'] = [
+      { id: 'receta-1', name: 'Hamburguesa Doble', type: 'final_product', is_published: true },
+    ]
+    mockSupabase._dataStore['recipe_ingredients'] = [
+      { id: 'ri-1', recipe_id: 'receta-1', ingredient_id: 'ing-carne', quantity: 2 },
+      { id: 'ri-2', recipe_id: 'receta-1', ingredient_id: 'ing-pan', quantity: 1 },
+    ]
+    mockSupabase._dataStore['recipe_sub_recipes'] = [
+      { id: 'rs-1', parent_recipe_id: 'receta-1', child_recipe_id: 'sub-salsa', quantity: 1 },
+    ]
+
+    const result = await deleteRecipeAction('receta-1')
+
+    expect(result.success).toBe(true)
+    expect(mockSupabase._dataStore['recipes']).toHaveLength(0)
+    expect(mockSupabase._dataStore['recipe_ingredients']).toHaveLength(0)
+    expect(mockSupabase._dataStore['recipe_sub_recipes']).toHaveLength(0)
+  })
+
+  it('debe impedir eliminar una sub-receta si está siendo usada en otra receta activa', async () => {
+    mockSupabase._dataStore['recipes'] = [
+      { id: 'sub-salsa', name: 'Salsa Tártara Especial', type: 'sub_recipe', is_published: true },
+      { id: 'receta-burger', name: 'Burger Especial', type: 'final_product', is_published: true },
+    ]
+    mockSupabase._dataStore['recipe_sub_recipes'] = [
+      { id: 'rs-1', parent_recipe_id: 'receta-burger', child_recipe_id: 'sub-salsa', quantity: 1 },
+    ]
+
+    await expect(deleteRecipeAction('sub-salsa')).rejects.toThrow(
+      /No se puede eliminar "Salsa Tártara Especial" porque está vinculada como sub-receta/
+    )
+
+    // La sub-receta debe mantenerse intacta
+    expect(mockSupabase._dataStore['recipes']).toHaveLength(2)
   })
 })

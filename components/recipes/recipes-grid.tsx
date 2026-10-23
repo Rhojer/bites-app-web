@@ -1,21 +1,29 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   UtensilsCrossed,
   Layers,
-  DollarSign,
-  TrendingUp,
   PackageCheck,
   Search,
-  ChevronRight,
-  Sparkles,
+  Trash2,
+  Loader2,
   AlertCircle
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog'
+import { deleteRecipeAction } from '@/app/recipes/actions'
 
 interface RecipeCardData {
   id: string
@@ -38,14 +46,36 @@ interface RecipesGridProps {
 }
 
 export function RecipesGrid({ recipes }: RecipesGridProps) {
+  const router = useRouter()
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState<'ALL' | 'final_product' | 'sub_recipe'>('ALL')
+
+  // Estado para modal de confirmación de eliminación
+  const [deletingRecipe, setDeletingRecipe] = useState<RecipeCardData | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const filtered = recipes.filter((r) => {
     const matchesSearch = r.name.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesType = filterType === 'ALL' || r.type === filterType
     return matchesSearch && matchesType
   })
+
+  async function handleConfirmDelete() {
+    if (!deletingRecipe) return
+    setIsDeleting(true)
+    setDeleteError(null)
+
+    try {
+      await deleteRecipeAction(deletingRecipe.id)
+      setDeletingRecipe(null)
+      router.refresh()
+    } catch (err: unknown) {
+      setDeleteError(err instanceof Error ? err.message : 'Error al eliminar la receta.')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -103,10 +133,10 @@ export function RecipesGrid({ recipes }: RecipesGridProps) {
           {filtered.map((recipe) => {
             const isFinal = recipe.type === 'final_product'
             return (
-              <Card key={recipe.id} className="border shadow-xs hover:border-primary/40 transition-all flex flex-col justify-between">
+              <Card key={recipe.id} className="border shadow-xs hover:border-primary/40 transition-all flex flex-col justify-between group">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2">
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         {isFinal ? (
                           <Badge variant="outline" className="text-[10px] text-primary border-primary/20">
@@ -117,12 +147,28 @@ export function RecipesGrid({ recipes }: RecipesGridProps) {
                             Sub-receta / Base
                           </Badge>
                         )}
-                        <span className="text-[11px] text-muted-foreground">{recipe.category}</span>
+                        <span className="text-[11px] text-muted-foreground truncate">{recipe.category}</span>
                       </div>
                       <CardTitle className="text-base font-bold text-foreground mt-1.5 leading-snug">
                         {recipe.name}
                       </CardTitle>
                     </div>
+
+                    {/* Botón Eliminar Receta */}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => {
+                        setDeleteError(null)
+                        setDeletingRecipe(recipe)
+                      }}
+                      className="size-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0 transition-colors"
+                      title={`Eliminar receta: ${recipe.name}`}
+                      aria-label={`Eliminar ${recipe.name}`}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
                   </div>
                   {recipe.description && (
                     <CardDescription className="text-xs line-clamp-2 mt-1">
@@ -196,6 +242,89 @@ export function RecipesGrid({ recipes }: RecipesGridProps) {
           })}
         </div>
       )}
+
+      {/* Modal de Confirmación de Eliminación */}
+      <Dialog
+        open={!!deletingRecipe}
+        onOpenChange={(open) => {
+          if (!open && !isDeleting) {
+            setDeletingRecipe(null)
+            setDeleteError(null)
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <div className="flex items-center gap-2 text-destructive mb-1">
+              <Trash2 className="size-5" />
+              <DialogTitle className="text-base font-bold text-foreground">
+                Eliminar Receta
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-xs text-muted-foreground">
+              ¿Estás seguro de que deseas eliminar la receta{' '}
+              <strong className="text-foreground">{deletingRecipe?.name}</strong>?
+            </DialogDescription>
+          </DialogHeader>
+
+          {deleteError && (
+            <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs space-y-1">
+              <div className="flex items-center gap-1.5 font-bold">
+                <AlertCircle className="size-4 shrink-0" />
+                <span>No se pudo eliminar</span>
+              </div>
+              <p className="leading-relaxed">{deleteError}</p>
+            </div>
+          )}
+
+          <div className="p-3 rounded-xl bg-muted/40 border text-xs space-y-1.5 text-muted-foreground">
+            <p>
+              • <strong>Tipo:</strong>{' '}
+              {deletingRecipe?.type === 'final_product' ? 'Plato Final' : 'Sub-receta / Preparación Base'}
+            </p>
+            <p>
+              • <strong>Composición:</strong> {deletingRecipe?.ingredientsCount} insumos directos y{' '}
+              {deletingRecipe?.subRecipesCount} sub-recetas anidadas.
+            </p>
+            <p className="text-[11px] pt-1 border-t text-muted-foreground/80 leading-normal">
+              Nota: Los insumos individuales en el almacén de inventario no se borrarán; solo se eliminará la ficha técnica y su escandallo.
+            </p>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0 mt-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setDeletingRecipe(null)}
+              disabled={isDeleting}
+              className="text-xs"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+              className="text-xs gap-1.5"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin" />
+                  <span>Eliminando...</span>
+                </>
+              ) : (
+                <>
+                  <Trash2 className="size-3.5" />
+                  <span>Eliminar Receta</span>
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

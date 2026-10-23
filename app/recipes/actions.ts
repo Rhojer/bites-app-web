@@ -101,3 +101,83 @@ export async function createRecipeAction(data: {
   revalidatePath('/recipes')
   return { success: true, id: recipeId }
 }
+
+export async function deleteRecipeAction(recipeId: string) {
+  const supabase = await createClient()
+
+  if (!recipeId) {
+    throw new Error('El identificador de la receta es obligatorio.')
+  }
+
+  // 1. Obtener la receta para validar existencia y nombre
+  const { data: recipe, error: fetchErr } = await supabase
+    .from('recipes')
+    .select('id, name, type')
+    .eq('id', recipeId)
+    .single()
+
+  if (fetchErr || !recipe) {
+    throw new Error('La receta no existe o ya fue eliminada.')
+  }
+
+  // 2. Si es una sub-receta, comprobar si otras recetas la tienen como insumo dependiente
+  const { data: childUsages } = await supabase
+    .from('recipe_sub_recipes')
+    .select('parent_recipe_id')
+    .eq('child_recipe_id', recipeId)
+
+  if (childUsages && childUsages.length > 0) {
+    throw new Error(
+      `No se puede eliminar "${recipe.name}" porque está vinculada como sub-receta en ${childUsages.length} preparación(es). Desvincúlala primero de esas recetas.`
+    )
+  }
+
+  // 3. Desvincular ingredientes directos asociados
+  await supabase
+    .from('recipe_ingredients')
+    .delete()
+    .eq('recipe_id', recipeId)
+
+  // 4. Desvincular sub-recetas que esta receta consumía
+  await supabase
+    .from('recipe_sub_recipes')
+    .delete()
+    .eq('parent_recipe_id', recipeId)
+
+  // 5. Intentar eliminar la receta
+  const { error: delErr } = await supabase
+    .from('recipes')
+    .delete()
+    .eq('id', recipeId)
+
+  if (delErr) {
+    // Si falla por integridad referencial (p. ej. tiene comandas en order_items), se despublica/archiva
+    const { error: archiveErr } = await supabase
+      .from('recipes')
+      .update({ is_published: false })
+      .eq('id', recipeId)
+
+    if (archiveErr) {
+      throw new Error(`Error al eliminar la receta: ${delErr.message}`)
+    }
+
+    revalidatePath('/recipes')
+    revalidatePath('/pos')
+    revalidatePath('/')
+    return {
+      success: true,
+      archived: true,
+      message: `La receta "${recipe.name}" cuenta con ventas históricas registradas, por lo que fue retirada del menú y archivada para proteger los reportes contables.`,
+    }
+  }
+
+  revalidatePath('/recipes')
+  revalidatePath('/pos')
+  revalidatePath('/')
+  return {
+    success: true,
+    archived: false,
+    message: `La receta "${recipe.name}" fue eliminada exitosamente.`,
+  }
+}
+
