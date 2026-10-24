@@ -79,26 +79,18 @@ describe('LoginPage - Vista de Autenticación BITES Street Food', () => {
     expect(screen.getByText(/SSL Activo/i)).toBeInTheDocument()
   })
 
-  it('renderiza el video de fondo con autoplay silenciado y sin loop para pausar al final', () => {
+  it('renderiza el video de fondo con autoplay silenciado y en loop continuo', () => {
     const { container } = render(<LoginPage />)
     const video = container.querySelector('video')
     expect(video).toBeInTheDocument()
     expect(video).toHaveAttribute('autoplay')
     expect(video).toHaveAttribute('playsinline')
-    expect(video?.hasAttribute('loop')).toBe(false)
+    expect(video).toHaveAttribute('loop')
 
     const sources = container.querySelectorAll('video source')
     expect(sources.length).toBeGreaterThanOrEqual(1)
     const srcList = Array.from(sources).map((s) => s.getAttribute('src'))
     expect(srcList.some((src) => src?.includes('login-bg.mp4'))).toBe(true)
-
-    // Al finalizar el video, debe llamar a pause() para asegurar que quede en el último fotograma
-    const pauseSpy = vi.fn()
-    if (video) {
-      video.pause = pauseSpy
-      fireEvent.ended(video)
-      expect(pauseSpy).toHaveBeenCalled()
-    }
   })
 
   it('permite alternar la visibilidad de la contraseña con el botón del ojo', () => {

@@ -214,12 +214,10 @@ function LoginFormContent() {
         <video
           ref={videoRef}
           autoPlay
+          loop
           muted
           playsInline
           preload="auto"
-          onEnded={(e) => {
-            e.currentTarget.pause()
-          }}
           className="absolute inset-0 w-full h-full object-cover object-center"
         >
           <source
