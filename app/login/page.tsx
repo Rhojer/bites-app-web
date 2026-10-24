@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -60,6 +60,19 @@ function LoginFormContent() {
   const [pinValue, setPinValue] = useState('')
   const [pinError, setPinError] = useState<string | null>(null)
   const [pinLoading, setPinLoading] = useState(false)
+
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+
+  useEffect(() => {
+    if (videoRef.current) {
+      const playPromise = videoRef.current.play()
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(() => {
+          // Ignorar si el navegador restringe la reproducción automática
+        })
+      }
+    }
+  }, [])
 
   const supabase = createClient()
 
@@ -193,26 +206,39 @@ function LoginFormContent() {
 
   return (
     <main
-      className="min-h-dvh w-full flex flex-col lg:flex-row bg-crumpled-paper relative overflow-hidden items-center justify-between"
+      className="w-full min-h-dvh lg:h-dvh lg:max-h-dvh flex flex-col lg:flex-row bg-crumpled-paper relative overflow-x-hidden overflow-y-auto lg:overflow-hidden items-center justify-between"
       style={{ backgroundColor: '#10131B' }}
     >
-      {/* Fondo de fotografía de street food y texturas */}
+      {/* Fondo de video de street food */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden select-none z-0">
-        <Image
-          src={`${process.env.NEXT_PUBLIC_BASE_PATH || '/bites-app-web'}/images/auth/login-bg.webp`}
-          alt="Bites Street Food Atmosphere Background"
-          fill
-          priority
-          className="object-cover object-center scale-[1.02] transform brightness-90 contrast-110"
-        />
-        {/* Capas de degradado para legibilidad y profundidad */}
-        <div className="absolute inset-0 bg-[#090a0d]/65 backdrop-blur-[1px]" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#090a0d]/90 via-[#090a0d]/60 to-[#090a0d]/90 lg:to-[#090a0d]/65" />
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          playsInline
+          preload="auto"
+          onEnded={(e) => {
+            e.currentTarget.pause()
+          }}
+          className="absolute inset-0 w-full h-full object-cover object-center"
+        >
+          <source
+            src={`${process.env.NEXT_PUBLIC_BASE_PATH || '/bites-app-web'}/videos/login-bg.mp4`}
+            type="video/mp4"
+          />
+          <source
+            src={`${process.env.NEXT_PUBLIC_BASE_PATH || '/bites-app-web'}/videos/login-bg.mov`}
+            type="video/quicktime"
+          />
+        </video>
+        {/* Capas de degradado sutiles para legibilidad y elegancia visual sin oscurecer excesivamente el video */}
+        <div className="absolute inset-0 bg-[#090a0d]/45 backdrop-blur-[0.5px]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#090a0d]/85 via-[#090a0d]/35 to-[#090a0d]/75 lg:to-[#090a0d]/50" />
         <div
           className="absolute inset-0"
           style={{
             background:
-              'radial-gradient(circle at 65% 50%, rgba(245, 158, 11, 0.12) 0%, rgba(9, 10, 13, 0.4) 50%, rgba(9, 10, 13, 0.85) 100%)',
+              'radial-gradient(circle at 65% 50%, rgba(245, 158, 11, 0.08) 0%, rgba(9, 10, 13, 0.25) 50%, rgba(9, 10, 13, 0.7) 100%)',
           }}
         />
       </div>
@@ -232,31 +258,18 @@ function LoginFormContent() {
       {/* ======================================================== */}
       <section
         aria-label="BITES Street Food Branding"
-        className="relative z-10 flex-1 flex flex-col justify-between p-6 sm:p-10 lg:p-16 xl:p-20 w-full min-h-[auto] lg:min-h-dvh"
+        className="relative z-10 flex-1 flex flex-col justify-between p-4 sm:p-6 lg:p-6 xl:p-10 2xl:p-14 w-full h-auto lg:h-full lg:max-h-dvh"
       >
-        {/* Encabezado superior de marca (Izquierda) */}
-        <div className="flex items-center justify-start gap-3 w-full">
-          <div className="flex items-center gap-3">
-            <div className="h-2 w-8 bg-gradient-to-r from-amber-400 to-amber-600 rounded-full shadow-[0_0_12px_rgba(245,158,11,0.6)]" />
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-900/90 border border-amber-500/30 backdrop-blur-md shadow-sm">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
-              </span>
-              <span className="text-[10px] sm:text-[11px] uppercase tracking-[0.22em] text-amber-300 font-bold">
-                FAST FOOD, REAL GOOD
-              </span>
-            </div>
-          </div>
-        </div>
+        {/* Espaciador superior adaptativo */}
+        <div className="hidden lg:block w-full min-h-[20px] xl:min-h-[32px]" aria-hidden="true" />
 
         {/* Centro: Logotipo de Gran Impacto y Slogan */}
-        <div className="my-auto max-w-xl py-6 lg:py-0 text-left w-full">
-          {/* Logo centrado */}
+        <div className="my-2 sm:my-4 lg:my-auto max-w-xl py-2 lg:py-0 text-left w-full">
+          {/* Logo centrado y adaptado a resoluciones de laptop y pantallas grandes */}
           <div className="flex justify-center w-full">
             <div className="relative inline-block group">
-              <div className="absolute -inset-8 bg-gradient-to-r from-amber-500/25 via-amber-400/15 to-transparent rounded-3xl blur-3xl pointer-events-none" />
-              <div className="relative w-44 sm:w-52 md:w-60 lg:w-[250px] xl:w-[280px] h-44 sm:h-52 md:h-60 lg:h-[250px] xl:h-[280px] mx-auto">
+              <div className="absolute -inset-6 bg-gradient-to-r from-amber-500/25 via-amber-400/15 to-transparent rounded-3xl blur-3xl pointer-events-none" />
+              <div className="relative w-32 sm:w-40 md:w-48 lg:w-48 xl:w-56 2xl:w-64 h-32 sm:h-40 md:h-48 lg:h-48 xl:h-56 2xl:h-64 mx-auto">
                 <Image
                   src={`${process.env.NEXT_PUBLIC_BASE_PATH || '/bites-app-web'}/images/auth/bites-logo.png`}
                   alt="BITES Logo"
@@ -269,40 +282,33 @@ function LoginFormContent() {
           </div>
 
           {/* Tagline: SISTEMA DE LOGIN centrado */}
-          <div className="flex items-center justify-center gap-3 mt-3 w-full">
-            <span className="text-amber-500 font-black text-sm tracking-widest">▪</span>
-            <p className="font-display uppercase text-[17px] sm:text-[23px] text-neutral-100 font-bold tracking-[0.3em] grunge-text text-center">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 mt-2 sm:mt-3 w-full">
+            <span className="text-amber-500 font-black text-xs sm:text-sm tracking-widest">▪</span>
+            <p className="font-display uppercase text-sm sm:text-base lg:text-lg xl:text-xl text-neutral-100 font-bold tracking-[0.25em] sm:tracking-[0.3em] grunge-text text-center">
               SISTEMA DE LOGIN
             </p>
-            <span className="text-amber-500 font-black text-sm tracking-widest">▪</span>
+            <span className="text-amber-500 font-black text-xs sm:text-sm tracking-widest">▪</span>
           </div>
 
-          {/* Descripción (Alineada a la izquierda, sin centrar) */}
-          <p className="text-neutral-300 text-xs sm:text-sm lg:text-base max-w-md mt-4 sm:mt-6 leading-relaxed lg:border-l-2 lg:border-amber-500/50 lg:pl-4 bg-gradient-to-r from-amber-500/10 to-transparent py-1.5 px-3 lg:px-4 rounded-lg text-left">
+          {/* Descripción (Alineada a la izquierda, concisa para no saturar laptops) */}
+          <p className="hidden sm:block text-neutral-300 text-xs lg:text-xs xl:text-sm max-w-md mx-auto lg:mx-0 mt-3 xl:mt-4 leading-relaxed lg:border-l-2 lg:border-amber-500/50 lg:pl-3 bg-gradient-to-r from-amber-500/10 to-transparent py-1.5 px-3 rounded-lg text-left">
             Sistema de Operaciones, Terminal de Pedidos &amp; Punto de Venta. Ingresa con tus
             credenciales de turno asignadas.
           </p>
         </div>
 
-        {/* Chips de Estado en Tiempo Real (Inferior, alineados a la izquierda en desktop) */}
-        <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 sm:gap-6 pt-6 border-t border-neutral-800/80 text-xs text-neutral-400">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-neutral-900/80 border border-neutral-800 backdrop-blur-sm shadow-xs">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-            <span className="font-medium text-neutral-200 tracking-wide text-[11px] sm:text-xs">
-              Terminal en Línea
-            </span>
-          </div>
-          <div className="hidden sm:block text-neutral-700">•</div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-900/60 border border-neutral-800/60 text-neutral-300 text-[11px] sm:text-xs">
-            <MapPin className="size-3.5 text-amber-400" />
+        {/* Chips de Estado en Tiempo Real (Inferior, alineados y proporcionados) */}
+        <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2.5 sm:gap-4 pt-3 sm:pt-4 border-t border-neutral-800/80 text-xs text-neutral-400">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg bg-neutral-900/60 border border-neutral-800/60 text-neutral-300 text-[10px] sm:text-xs">
+            <MapPin className="size-3 sm:size-3.5 text-amber-400" />
             <span className="text-neutral-400">Sucursal:</span>
             <span className="text-amber-400 font-bold tracking-wide">BOMBA BRISAS DEL ISIRO</span>
           </div>
           <div className="hidden lg:block text-neutral-700">•</div>
-          <div className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-900/60 border border-neutral-800/60 text-neutral-400 text-[11px]">
-            <Wifi className="size-3.5 text-neutral-400" />
+          <div className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg bg-neutral-900/60 border border-neutral-800/60 text-neutral-400 text-[10px] sm:text-[11px]">
+            <Wifi className="size-3 sm:size-3.5 text-neutral-400" />
             <span>Red:</span>
-            <span className="text-neutral-200 font-mono text-[11px]">Bites-HQ-LAN</span>
+            <span className="text-neutral-200 font-mono text-[10px] sm:text-[11px]">Bites-HQ-LAN</span>
           </div>
         </div>
       </section>
@@ -312,34 +318,34 @@ function LoginFormContent() {
       {/* ======================================================== */}
       <aside
         aria-label="Portal de Inicio de Sesión"
-        className="relative z-20 w-full lg:w-[480px] xl:w-[530px] flex-shrink-0 flex items-center justify-center p-4 sm:p-6 lg:p-10 my-auto"
+        className="relative z-20 w-full lg:w-[410px] xl:w-[460px] 2xl:w-[490px] flex-shrink-0 flex items-center justify-center p-3 sm:p-5 lg:p-5 xl:p-8 my-auto"
       >
         <div
-          className="w-full max-w-md rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9),0_0_40px_rgba(245,158,11,0.08)] border border-amber-500/25 backdrop-blur-2xl flex flex-col justify-between space-y-6 relative overflow-hidden"
-          style={{ backgroundColor: 'rgba(18, 26, 43, 0.85)' }}
+          className="w-full max-w-md lg:max-w-none rounded-2xl sm:rounded-3xl p-4 sm:p-6 xl:p-7 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9),0_0_40px_rgba(245,158,11,0.08)] border border-amber-500/25 backdrop-blur-2xl flex flex-col justify-between space-y-3.5 sm:space-y-4 xl:space-y-5 relative overflow-hidden"
+          style={{ backgroundColor: 'rgba(18, 26, 43, 0.88)' }}
         >
           {/* Acento dorado sutil en borde superior */}
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400/60 to-transparent pointer-events-none" />
 
           {/* Encabezado del Card */}
           <header className="w-full">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between mb-2.5 sm:mb-3">
+              <div className="flex items-center gap-2.5 sm:gap-3">
                 {/* Mini logo BITES */}
-                <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-neutral-800 to-neutral-950 border border-amber-500/35 flex items-center justify-center p-1.5 shadow-inner shadow-amber-500/10 overflow-hidden shrink-0">
+                <div className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-neutral-800 to-neutral-950 border border-amber-500/35 flex items-center justify-center p-1.5 shadow-inner shadow-amber-500/10 overflow-hidden shrink-0">
                   <Image
                     src={`${process.env.NEXT_PUBLIC_BASE_PATH || '/bites-app-web'}/images/auth/bites-logo.png`}
                     alt="Logo BITES"
-                    width={60}
-                    height={60}
+                    width={48}
+                    height={48}
                     className="object-contain w-full h-full"
                   />
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-display font-bold text-[19px] sm:text-[23px] tracking-wider text-white">
+                  <span className="font-display font-bold text-lg sm:text-xl tracking-wider text-white">
                     BITES
                   </span>
-                  <span className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest text-amber-400 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 shadow-xs">
+                  <span className="text-[9px] font-extrabold uppercase tracking-widest text-amber-400 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 shadow-xs">
                     STAFF POS
                   </span>
                 </div>
@@ -349,19 +355,19 @@ function LoginFormContent() {
               <button
                 type="button"
                 onClick={() => setHelpOpen(true)}
-                className="text-xs text-neutral-400 hover:text-amber-400 transition-colors font-medium flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-neutral-800/60 border border-transparent hover:border-neutral-700/60"
+                className="text-xs text-neutral-400 hover:text-amber-400 transition-colors font-medium flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-neutral-800/60 border border-transparent hover:border-neutral-700/60"
               >
-                <HelpCircle className="w-4 h-4 text-amber-400/90" />
+                <HelpCircle className="w-3.5 h-3.5 text-amber-400/90" />
                 <span>Ayuda</span>
               </button>
             </div>
 
             {/* Saludo y Título del Formulario */}
             <div>
-              <h1 className="text-[23px] sm:text-[29px] font-display font-extrabold text-white tracking-wide uppercase grunge-text">
+              <h1 className="text-xl sm:text-2xl font-display font-extrabold text-white tracking-wide uppercase grunge-text">
                 INICIAR SESIÓN
               </h1>
-              <p className="text-[11px] sm:text-[13px] text-neutral-400 mt-1">
+              <p className="text-[11px] sm:text-xs text-neutral-400 mt-0.5">
                 Bienvenido al portal operativo de{' '}
                 <strong className="text-neutral-200 font-semibold">BITES Street Food</strong>.
               </p>
@@ -372,7 +378,7 @@ function LoginFormContent() {
           {errorMessage && (
             <div
               role="alert"
-              className="p-3 rounded-xl bg-red-950/70 border border-red-500/40 text-red-200 text-xs flex items-start gap-2.5 animate-in fade-in-50 duration-200"
+              className="p-2.5 rounded-xl bg-red-950/70 border border-red-500/40 text-red-200 text-xs flex items-start gap-2 animate-in fade-in-50 duration-200"
             >
               <AlertCircle className="size-4 text-red-400 shrink-0 mt-0.5" />
               <div className="flex-1 font-medium leading-relaxed">{errorMessage}</div>
@@ -389,7 +395,7 @@ function LoginFormContent() {
           {successMessage && (
             <div
               role="status"
-              className="p-3 rounded-xl bg-emerald-950/70 border border-emerald-500/40 text-emerald-200 text-xs flex items-start gap-2.5 animate-in fade-in-50 duration-200"
+              className="p-2.5 rounded-xl bg-emerald-950/70 border border-emerald-500/40 text-emerald-200 text-xs flex items-start gap-2 animate-in fade-in-50 duration-200"
             >
               <CheckCircle2 className="size-4 text-emerald-400 shrink-0 mt-0.5" />
               <div className="flex-1 font-medium leading-relaxed">{successMessage}</div>
@@ -397,18 +403,18 @@ function LoginFormContent() {
           )}
 
           {/* Formulario de Autenticación */}
-          <form onSubmit={handleSubmit} className="space-y-4 flex flex-col justify-center">
+          <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-3.5 flex flex-col justify-center">
             {/* Campo Usuario o Correo */}
-            <div className="space-y-1.5 text-left">
+            <div className="space-y-1 text-left">
               <label
                 htmlFor="username"
-                className="block text-[11px] font-semibold uppercase tracking-wider text-neutral-300 text-left"
+                className="block text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-neutral-300 text-left"
               >
                 Usuario o Correo
               </label>
               <div className="relative rounded-lg shadow-xs">
                 <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-neutral-400">
-                  <User className="w-4 h-4 text-amber-400/80" />
+                  <User className="w-3.5 h-3.5 text-amber-400/80" />
                 </div>
                 <input
                   id="username"
@@ -419,31 +425,31 @@ function LoginFormContent() {
                   value={usernameOrEmail}
                   onChange={(e) => setUsernameOrEmail(e.target.value)}
                   placeholder="ejemplo@bitesfood.com o ID turno"
-                  className="block w-full pl-8 pr-4 py-3 bg-neutral-950/80 border border-neutral-700/80 rounded-xl text-[13px] text-white placeholder-neutral-500 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition duration-150 backdrop-blur-sm text-left placeholder:text-left"
+                  className="block w-full pl-8 pr-3 py-2.5 bg-neutral-950/80 border border-neutral-700/80 rounded-xl text-xs sm:text-[13px] text-white placeholder-neutral-500 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition duration-150 backdrop-blur-sm text-left placeholder:text-left"
                 />
               </div>
             </div>
 
             {/* Campo Contraseña con Toggle de Visibilidad */}
-            <div className="space-y-1.5 text-left">
+            <div className="space-y-1 text-left">
               <div className="flex items-center justify-between">
                 <label
                   htmlFor="password"
-                  className="block text-[11px] font-semibold uppercase tracking-wider text-neutral-300 text-left"
+                  className="block text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-neutral-300 text-left"
                 >
                   Contraseña
                 </label>
                 <button
                   type="button"
                   onClick={() => setForgotPasswordOpen(true)}
-                  className="text-[11px] text-amber-400 hover:text-amber-300 hover:underline transition-colors font-medium"
+                  className="text-[10px] sm:text-[11px] text-amber-400 hover:text-amber-300 hover:underline transition-colors font-medium"
                 >
                   ¿Olvidaste tu clave?
                 </button>
               </div>
               <div className="relative rounded-lg shadow-xs">
                 <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-neutral-400">
-                  <Lock className="w-4 h-4 text-amber-400/80" />
+                  <Lock className="w-3.5 h-3.5 text-amber-400/80" />
                 </div>
                 <input
                   id="password"
@@ -454,32 +460,32 @@ function LoginFormContent() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
-                  className="block w-full pl-8 pr-11 py-3 bg-neutral-950/80 border border-neutral-700/80 rounded-xl text-[13px] text-white placeholder-neutral-500 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition duration-150 backdrop-blur-sm text-left placeholder:text-left"
+                  className="block w-full pl-8 pr-10 py-2.5 bg-neutral-950/80 border border-neutral-700/80 rounded-xl text-xs sm:text-[13px] text-white placeholder-neutral-500 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition duration-150 backdrop-blur-sm text-left placeholder:text-left"
                 />
                 <button
                   type="button"
                   id="toggle-password-visibility"
                   aria-label="Mostrar u ocultar contraseña"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-neutral-400 hover:text-amber-400 transition-colors"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-400 hover:text-amber-400 transition-colors"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
 
             {/* Mantener sesión iniciada */}
-            <div className="flex items-center justify-between pt-1">
-              <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+            <div className="flex items-center justify-between pt-0.5">
+              <label className="flex items-center gap-2 cursor-pointer select-none group">
                 <input
                   id="remember"
                   name="remember"
                   type="checkbox"
                   checked={rememberDevice}
                   onChange={(e) => setRememberDevice(e.target.checked)}
-                  className="w-4 h-4 rounded bg-neutral-950 border-neutral-700 text-amber-500 focus:ring-amber-500/30 focus:ring-offset-neutral-900 cursor-pointer"
+                  className="w-3.5 h-3.5 rounded bg-neutral-950 border-neutral-700 text-amber-500 focus:ring-amber-500/30 focus:ring-offset-neutral-900 cursor-pointer"
                 />
-                <span className="text-[11px] text-neutral-300 group-hover:text-neutral-200 transition-colors">
+                <span className="text-[10px] sm:text-[11px] text-neutral-300 group-hover:text-neutral-200 transition-colors">
                   Mantener sesión iniciada en este equipo
                 </span>
               </label>
@@ -489,35 +495,35 @@ function LoginFormContent() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 py-3.5 px-6 rounded-xl bg-gradient-to-r from-amber-500 via-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-[0.99] text-neutral-950 font-display font-black text-[15px] uppercase tracking-wider shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 transition-all duration-200 flex items-center justify-center gap-2 group disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+              className="w-full mt-1.5 py-2.5 sm:py-3 px-5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-[0.99] text-neutral-950 font-display font-black text-xs sm:text-sm uppercase tracking-wider shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 transition-all duration-200 flex items-center justify-center gap-2 group disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin text-neutral-950" />
+                  <Loader2 className="w-4 h-4 animate-spin text-neutral-950" />
                   <span>AUTENTICANDO...</span>
                 </>
               ) : (
                 <>
                   <span>ENTRAR AL SISTEMA</span>
-                  <ArrowRight className="w-5 h-5 text-neutral-950 stroke-[2.5] transform group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="w-4 h-4 text-neutral-950 stroke-[2.5] transform group-hover:translate-x-1 transition-transform" />
                 </>
               )}
             </button>
 
             {/* Separador de Acceso Rápido */}
-            <div className="relative my-3">
+            <div className="relative my-2">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-neutral-800/80" />
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className="px-3 rounded-full bg-neutral-900 text-neutral-400 uppercase tracking-widest text-[10px] font-bold border border-neutral-800/80">
+                <span className="px-2.5 py-0.5 rounded-full bg-neutral-900 text-neutral-400 uppercase tracking-widest text-[9px] sm:text-[10px] font-bold border border-neutral-800/80">
                   O acceso rápido
                 </span>
               </div>
             </div>
 
             {/* Accesos rápidos para personal de turno */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2.5">
               <button
                 type="button"
                 onClick={() => {
@@ -525,16 +531,16 @@ function LoginFormContent() {
                   setPinError(null)
                   setPinModalOpen(true)
                 }}
-                className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-neutral-950/80 hover:bg-neutral-900 hover:border-amber-500/50 border border-neutral-700/60 text-[11px] font-semibold text-neutral-300 hover:text-white transition-all shadow-xs active:scale-[0.98] cursor-pointer"
+                className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-neutral-950/80 hover:bg-neutral-900 hover:border-amber-500/50 border border-neutral-700/60 text-[10px] sm:text-[11px] font-semibold text-neutral-300 hover:text-white transition-all shadow-xs active:scale-[0.98] cursor-pointer"
               >
-                <Fingerprint className="w-4 h-4 text-amber-400 shrink-0" />
+                <Fingerprint className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                 <span className="truncate">PIN / Huella POS</span>
               </button>
 
               <button
                 type="button"
                 onClick={handleGoogleLogin}
-                className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-neutral-950/80 hover:bg-neutral-900 hover:border-neutral-500 border border-neutral-700/60 text-[11px] font-semibold text-neutral-300 hover:text-white transition-all shadow-xs active:scale-[0.98] cursor-pointer"
+                className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-neutral-950/80 hover:bg-neutral-900 hover:border-neutral-500 border border-neutral-700/60 text-[10px] sm:text-[11px] font-semibold text-neutral-300 hover:text-white transition-all shadow-xs active:scale-[0.98] cursor-pointer"
               >
                 <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24">
                   <path
@@ -548,16 +554,16 @@ function LoginFormContent() {
           </form>
 
           {/* Footer de Tarjeta: Versión y Seguridad */}
-          <footer className="pt-4 border-t border-neutral-800/80 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-neutral-400">
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-[11px] text-neutral-300">BITES Hub v2.4</span>
+          <footer className="pt-2.5 sm:pt-3 border-t border-neutral-800/80 flex flex-col sm:flex-row items-center justify-between gap-1 sm:gap-2 text-xs text-neutral-400">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="font-mono text-[10px] sm:text-[11px] text-neutral-300">BITES Hub v2.4</span>
               <span className="text-neutral-600">•</span>
-              <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400 font-medium">
-                <ShieldCheck className="w-3.5 h-3.5" />
+              <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] text-emerald-400 font-medium">
+                <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 SSL Activo
               </span>
             </div>
-            <div className="text-neutral-500 text-[11px]">© 2024 BITES Street Food</div>
+            <div className="text-neutral-500 text-[10px] sm:text-[11px]">© 2024 BITES Street Food</div>
           </footer>
         </div>
       </aside>
