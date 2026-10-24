@@ -51,6 +51,16 @@ describe('Middleware Auth Gatekeeper (updateSession)', () => {
     expect(response.headers.get('location')).toBeNull()
   })
 
+  it('permite el acceso sin redirección a recursos estáticos de videos (/videos/login-bg.mp4)', async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: null }, error: null })
+
+    const request = new NextRequest('http://localhost:3000/videos/login-bg.mp4')
+    const response = await updateSession(request)
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('location')).toBeNull()
+  })
+
   it('permite el acceso si tiene la cookie de sesión rápida de turno POS (bites_pos_session=active)', async () => {
     mockGetUser.mockResolvedValueOnce({ data: { user: null }, error: null })
 

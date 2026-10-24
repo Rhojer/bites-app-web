@@ -52,6 +52,7 @@ export async function updateSession(request: NextRequest) {
     cleanPath.startsWith('/auth') ||
     cleanPath.startsWith('/api') ||
     cleanPath.startsWith('/images') ||
+    cleanPath.startsWith('/videos') ||
     cleanPath === '/favicon.ico' ||
     cleanPath === '/manifest.json' ||
     cleanPath === '/sw.js' ||
