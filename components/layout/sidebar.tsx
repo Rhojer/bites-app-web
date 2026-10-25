@@ -90,13 +90,32 @@ export function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
     return pathname === item.href || pathname.startsWith(item.href + '/')
   })
 
-  // Índice optimista inmediato al hacer clic (tal cual en bottom-nav)
+  // Índice activo inmediato (optimista al hacer clic)
   const activeIndex = touchOptimisticIndex !== null ? touchOptimisticIndex : routeActiveIndex
 
   // Limpiar índice optimista cuando el pathname se actualice
   useEffect(() => {
     setTouchOptimisticIndex(null)
   }, [pathname])
+
+  const handleItemClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string, idx: number) => {
+    // Si ya estamos en la pestaña actual, no hacer nada
+    if (routeActiveIndex === idx) return
+
+    // Permitir clic con modificador (Ctrl+Click, Cmd+Click para abrir en nueva pestaña)
+    if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return
+
+    e.preventDefault()
+
+    // 1. Desplazar inmediatamente la cápsula en pantalla
+    setTouchOptimisticIndex(idx)
+    onItemClick?.()
+
+    // 2. Dar tiempo visible (180ms) para apreciar la transición fluida antes de cambiar de página
+    setTimeout(() => {
+      router.push(href)
+    }, 180)
+  }
 
   const handleLogout = async () => {
     try {
@@ -150,9 +169,10 @@ export function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
           {activeIndex >= 0 && activeIndex < navigationItems.length && (
             <div
               data-testid="sidebar-pill-indicator"
-              className="absolute left-0 right-0 h-11 rounded-full bg-primary shadow-md shadow-primary/25 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] pointer-events-none"
+              className="absolute top-0 left-0 right-0 h-11 rounded-full bg-primary shadow-md shadow-primary/25 pointer-events-none"
               style={{
                 transform: `translate3d(0, ${activeIndex * 50}px, 0)`,
+                transition: 'transform 250ms cubic-bezier(0.32, 0.72, 0, 1)',
               }}
             />
           )}
@@ -163,10 +183,7 @@ export function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
               <Link
                 key={item.name}
                 href={item.href}
-                onClick={() => {
-                  setTouchOptimisticIndex(idx)
-                  onItemClick?.()
-                }}
+                onClick={(e) => handleItemClick(e, item.href, idx)}
                 className={`relative z-10 flex items-center justify-between h-11 px-4 rounded-full text-sm select-none touch-manipulation transition-all duration-200 active:scale-95 ${
                   isActive
                     ? 'text-primary-foreground font-bold'
