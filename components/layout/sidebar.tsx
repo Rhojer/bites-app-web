@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -80,6 +80,12 @@ export function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
   const router = useRouter()
   const [loggingOut, setLoggingOut] = useState(false)
   const [touchOptimisticIndex, setTouchOptimisticIndex] = useState<number | null>(null)
+  const [prevPathname, setPrevPathname] = useState(pathname)
+
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname)
+    setTouchOptimisticIndex(null)
+  }
 
   // Calcular índice de la ruta activa
   const routeActiveIndex = navigationItems.findIndex((item) => {
@@ -92,11 +98,6 @@ export function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
 
   // Índice activo inmediato (optimista al hacer clic)
   const activeIndex = touchOptimisticIndex !== null ? touchOptimisticIndex : routeActiveIndex
-
-  // Limpiar índice optimista cuando el pathname se actualice
-  useEffect(() => {
-    setTouchOptimisticIndex(null)
-  }, [pathname])
 
   const handleItemClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string, idx: number) => {
     // Si ya estamos en la pestaña actual, no hacer nada

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -44,6 +44,12 @@ export function BottomNav() {
   const pathname = usePathname()
   const [moreOpen, setMoreOpen] = useState(false)
   const [touchOptimisticIndex, setTouchOptimisticIndex] = useState<number | null>(null)
+  const [prevPathname, setPrevPathname] = useState(pathname)
+
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname)
+    setTouchOptimisticIndex(null)
+  }
 
   // Find active primary tab
   const primaryIndex = PRIMARY_TABS.findIndex((tab) => {
@@ -67,11 +73,6 @@ export function BottomNav() {
 
   // Optimistic index on immediate tap for instantaneous iOS response
   const activeIndex = touchOptimisticIndex !== null ? touchOptimisticIndex : currentRouteIndex
-
-  // Clear optimistic index when pathname updates to match target
-  useEffect(() => {
-    setTouchOptimisticIndex(null)
-  }, [pathname])
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/85 dark:bg-card/85 backdrop-blur-xl border-t border-border/50 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] pt-1.5 px-3 shadow-[0_-4px_24px_rgba(0,0,0,0.06)]">
