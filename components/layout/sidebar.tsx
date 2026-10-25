@@ -75,13 +75,42 @@ export const navigationItems = [
   },
 ]
 
+// Memoria en sesión para persistir el origen de la transición entre cambios de vista Next.js
+let memoryPreviousIndex = -1
+
+function getSavedIndex(): number {
+  if (memoryPreviousIndex !== -1) return memoryPreviousIndex
+  if (typeof window !== 'undefined') {
+    try {
+      const saved = sessionStorage.getItem('bites_sidebar_idx')
+      if (saved !== null) {
+        const parsed = parseInt(saved, 10)
+        if (!isNaN(parsed) && parsed >= 0) return parsed
+      }
+    } catch {
+      // Ignorar restricciones en entornos SSR o testing
+    }
+  }
+  return -1
+}
+
+function saveIndex(idx: number) {
+  memoryPreviousIndex = idx
+  if (typeof window !== 'undefined') {
+    try {
+      sessionStorage.setItem('bites_sidebar_idx', String(idx))
+    } catch {
+      // Ignorar restricciones
+    }
+  }
+}
+
 export function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
   const pathname = usePathname()
   const router = useRouter()
   const [loggingOut, setLoggingOut] = useState(false)
-  const [touchOptimisticIndex, setTouchOptimisticIndex] = useState<number | null>(null)
 
-  // Calculate active route index
+  // Calcular índice de la ruta activa
   const routeActiveIndex = navigationItems.findIndex((item) => {
     if (!pathname) return false
     if (item.href === '/') {
@@ -90,16 +119,36 @@ export function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
     return pathname === item.href || pathname.startsWith(item.href + '/')
   })
 
-  // Optimistic index on immediate click for instant responsiveness
-  const activeIndex = touchOptimisticIndex !== null ? touchOptimisticIndex : routeActiveIndex
+  // Determinar si venimos de otra pestaña para ejecutar la transición deslizante
+  const prevIdx = getSavedIndex()
+  const hasPrevious = prevIdx !== -1 && prevIdx !== routeActiveIndex && routeActiveIndex !== -1
 
-  // Clear optimistic index when pathname updates to match target
+  // Posición inicial: si venimos de otra vista, comenzar en la posición previa para deslizar hacia la nueva
+  const initialY = (hasPrevious ? prevIdx : (routeActiveIndex >= 0 ? routeActiveIndex : 0)) * 50
+
+  const [indicatorY, setIndicatorY] = useState<number>(initialY)
+  const [isTransitioning, setIsTransitioning] = useState<boolean>(!hasPrevious)
+
+  // Ejecutar el deslizamiento al montar en la nueva página
   useEffect(() => {
-    setTouchOptimisticIndex(null)
-  }, [pathname])
+    if (routeActiveIndex === -1) return
 
-  // Exact vertical position of the active pill (each button is 44px + 6px gap = 50px step)
-  const activeY = activeIndex >= 0 ? activeIndex * 50 : 0
+    const targetY = routeActiveIndex * 50
+
+    if (hasPrevious) {
+      // Asegurar que el navegador pinte primero en el origen y luego anime fluidamente al destino
+      const timer = setTimeout(() => {
+        setIsTransitioning(true)
+        setIndicatorY(targetY)
+        saveIndex(routeActiveIndex)
+      }, 30)
+      return () => clearTimeout(timer)
+    } else {
+      setIsTransitioning(true)
+      setIndicatorY(targetY)
+      saveIndex(routeActiveIndex)
+    }
+  }, [routeActiveIndex, hasPrevious])
 
   const handleLogout = async () => {
     try {
@@ -149,29 +198,35 @@ export function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
           Menú Principal
         </p>
         <div className="relative flex flex-col gap-1.5">
-          {/* Sliding Pill Indicator (Cápsula activa) */}
-          {activeIndex >= 0 && activeIndex < navigationItems.length && (
+          {/* Sliding Pill Indicator (Cápsula activa con transición iOS) */}
+          {indicatorY >= 0 && (
             <div
               data-testid="sidebar-pill-indicator"
-              className="absolute left-0 right-0 h-11 rounded-full bg-primary shadow-md shadow-primary/25 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] pointer-events-none"
+              className={`absolute left-0 right-0 h-11 rounded-full bg-primary shadow-md shadow-primary/25 pointer-events-none ${
+                isTransitioning
+                  ? 'transition-transform duration-350 ease-[cubic-bezier(0.32,0.72,0,1)]'
+                  : ''
+              }`}
               style={{
-                transform: `translate3d(0, ${activeY}px, 0)`,
+                transform: `translate3d(0, ${indicatorY}px, 0)`,
               }}
             />
           )}
 
           {navigationItems.map((item, idx) => {
-            const isActive = activeIndex === idx
+            const isSelected = routeActiveIndex === idx
             return (
               <Link
                 key={item.name}
                 href={item.href}
                 onClick={() => {
-                  setTouchOptimisticIndex(idx)
+                  setIsTransitioning(true)
+                  setIndicatorY(idx * 50)
+                  saveIndex(idx)
                   onItemClick?.()
                 }}
-                className={`relative z-10 flex items-center justify-between h-11 px-4 rounded-full text-sm select-none transition-all duration-200 active:scale-[0.98] ${
-                  isActive
+                className={`relative z-10 flex items-center justify-between h-11 px-4 rounded-full text-sm select-none touch-manipulation transition-colors duration-200 active:scale-[0.98] ${
+                  isSelected
                     ? 'text-primary-foreground font-bold'
                     : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground font-medium'
                 }`}
@@ -179,7 +234,7 @@ export function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
                 <div className="flex items-center gap-3">
                   <item.icon
                     className={`size-5 shrink-0 transition-transform duration-200 ${
-                      isActive ? 'scale-110 text-primary-foreground' : 'text-muted-foreground'
+                      isSelected ? 'scale-110 text-primary-foreground' : 'text-muted-foreground'
                     }`}
                   />
                   <span className="font-semibold text-sm tracking-tight">{item.name}</span>
@@ -188,7 +243,7 @@ export function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
                   <Badge
                     variant="outline"
                     className={`text-[9px] px-1.5 py-0 font-bold ${
-                      isActive
+                      isSelected
                         ? 'bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30'
                         : 'bg-muted text-muted-foreground border-border/50'
                     }`}
