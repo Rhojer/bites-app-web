@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -80,8 +80,6 @@ export function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
   const router = useRouter()
   const [loggingOut, setLoggingOut] = useState(false)
   const [touchOptimisticIndex, setTouchOptimisticIndex] = useState<number | null>(null)
-  const [indicatorTop, setIndicatorTop] = useState<number>(0)
-  const itemRefs = useRef<(HTMLAnchorElement | null)[]>([])
 
   // Calculate active route index
   const routeActiveIndex = navigationItems.findIndex((item) => {
@@ -100,23 +98,8 @@ export function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
     setTouchOptimisticIndex(null)
   }, [pathname])
 
-  // Update sliding pill position
-  useEffect(() => {
-    const updatePosition = () => {
-      if (activeIndex >= 0) {
-        const el = itemRefs.current[activeIndex]
-        if (el && el.offsetTop > 0) {
-          setIndicatorTop(el.offsetTop)
-        } else {
-          setIndicatorTop(activeIndex * 50)
-        }
-      }
-    }
-
-    updatePosition()
-    window.addEventListener('resize', updatePosition)
-    return () => window.removeEventListener('resize', updatePosition)
-  }, [activeIndex])
+  // Exact vertical position of the active pill (each button is 44px + 6px gap = 50px step)
+  const activeY = activeIndex >= 0 ? activeIndex * 50 : 0
 
   const handleLogout = async () => {
     try {
@@ -172,7 +155,7 @@ export function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
               data-testid="sidebar-pill-indicator"
               className="absolute left-0 right-0 h-11 rounded-full bg-primary shadow-md shadow-primary/25 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] pointer-events-none"
               style={{
-                transform: `translate3d(0, ${indicatorTop}px, 0)`,
+                transform: `translate3d(0, ${activeY}px, 0)`,
               }}
             />
           )}
@@ -182,9 +165,6 @@ export function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
             return (
               <Link
                 key={item.name}
-                ref={(el) => {
-                  itemRefs.current[idx] = el
-                }}
                 href={item.href}
                 onClick={() => {
                   setTouchOptimisticIndex(idx)
