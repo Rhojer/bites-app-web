@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Motor de Sincronización Automática en Segundo Plano (Offline Sync Engine)
  */
 
@@ -6,7 +6,6 @@ import {
   getPendingOfflineOrders,
   updateOfflineOrderStatus,
   removeOfflineOrder,
-  OfflineOrder
 } from './offline-db'
 import { processOrderAction } from '@/app/pos/actions'
 

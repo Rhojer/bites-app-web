@@ -1,8 +1,6 @@
 import {
   convertUnitQuantity,
   calculateNormalizedUnitCost,
-  SUPPORTED_UNITS,
-  normalizeUnitCode
 } from './units'
 
 export interface IngredientItem {

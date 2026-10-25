@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ArrowLeftRight, Loader2, DollarSign, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { ArrowLeftRight, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -14,7 +14,6 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
 import { recordCurrencyExchangeAction } from '@/app/cash-register/actions'
 import { VaultType } from '@/lib/domain/cash-register'
 import { useBcvRate } from '@/lib/hooks/use-bcv-rate'

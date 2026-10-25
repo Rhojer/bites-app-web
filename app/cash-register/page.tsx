@@ -1,14 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { AdminShell } from '@/components/layout/admin-shell'
 import { Navbar } from '@/components/layout/navbar'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { RecordExpenseDialog } from '@/components/cash-register/record-expense-dialog'
 import { CurrencyExchangeDialog } from '@/components/cash-register/currency-exchange-dialog'
 import { calculateMultiVaultBalances, VaultType } from '@/lib/domain/cash-register'
 import { getBcvRate } from '@/lib/bcv'
-import { Wallet, ArrowDownRight, ArrowUpRight, DollarSign, Clock, FileText, CheckCircle2, AlertTriangle, ArrowLeftRight, Banknote, Coins, Landmark, Globe } from 'lucide-react'
+import { ArrowDownRight, DollarSign, FileText, ArrowLeftRight, Banknote, Coins, Landmark, Globe } from 'lucide-react'
 
 interface DbPayment {
   id: string

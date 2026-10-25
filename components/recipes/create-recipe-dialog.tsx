@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { PlusCircle, Trash2, Loader2, Sparkles, UtensilsCrossed, Layers, DollarSign, AlertTriangle } from 'lucide-react'
+import { PlusCircle, Trash2, Loader2, UtensilsCrossed, Layers, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { createRecipeAction } from '@/app/recipes/actions'
-import { calculateNormalizedUnitCost, checkRecipeQuantitySanity, SUPPORTED_UNITS } from '@/lib/domain/units'
+import { calculateNormalizedUnitCost, checkRecipeQuantitySanity } from '@/lib/domain/units'
 
 interface IngredientOption {
   id: string
@@ -50,7 +50,7 @@ export function CreateRecipeDialog({
   const [type, setType] = useState<'final_product' | 'sub_recipe'>('final_product')
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [category, setCategory] = useState('Hamburguesas & Sandwiches')
+  const category = 'Hamburguesas & Sandwiches'
   const [price, setPrice] = useState<number>(10)
   const [yieldQuantity, setYieldQuantity] = useState<number>(1)
   const [yieldUnit, setYieldUnit] = useState('porción')

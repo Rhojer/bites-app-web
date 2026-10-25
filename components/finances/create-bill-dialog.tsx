@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Loader2, FileText, Calendar, Building2, DollarSign } from 'lucide-react'
+import { Plus, Loader2, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,

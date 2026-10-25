@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Wifi, WifiOff, RefreshCw } from 'lucide-react'
+import { WifiOff, RefreshCw } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { offlineSyncManager, SyncState } from '@/lib/offline-sync'
 

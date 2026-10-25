@@ -11,7 +11,7 @@ import { ExpensesTable, ExpenseItem } from '@/components/finances/expenses-table
 import { SavingsTargetsCard } from '@/components/finances/savings-targets-card'
 import { SuppliersTable } from '@/components/finances/suppliers-table'
 import { CreateSupplierDialog } from '@/components/finances/create-supplier-dialog'
-import { TrendingDown, FileText, CreditCard, FileSpreadsheet, Building2, Plus } from 'lucide-react'
+import { TrendingDown, FileText, CreditCard, FileSpreadsheet, Building2 } from 'lucide-react'
 
 export default async function FinancesPage() {
   const supabase = await createClient()

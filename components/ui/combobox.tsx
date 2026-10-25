@@ -4,8 +4,6 @@ import * as React from 'react'
 import { useState, useRef, useEffect } from 'react'
 import { Check, ChevronsUpDown, Search, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 
 export interface ComboboxOption {
   value: string

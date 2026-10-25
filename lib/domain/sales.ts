@@ -67,6 +67,9 @@ export function formatCustomerDisplay(
   orderType?: string,
   tableNumber?: string | null
 ): { displayName: string; isGuest: boolean } {
+  void orderType
+  void tableNumber
+
   if (!customerName || !customerName.trim()) {
     return { displayName: 'Invitado', isGuest: true }
   }

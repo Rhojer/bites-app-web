@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { CreateIngredientDialog } from '@/components/inventory/create-ingredient-dialog'
 import { RecordWasteDialog } from '@/components/inventory/record-waste-dialog'
 import { IngredientsTable } from '@/components/inventory/ingredients-table'
-import { Boxes, AlertTriangle, DollarSign, ArrowDownRight, Layers } from 'lucide-react'
+import { Boxes, AlertTriangle, DollarSign, ArrowDownRight } from 'lucide-react'
 
 export default async function InventoryPage() {
   const supabase = await createClient()

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -60,8 +60,9 @@ export function CustomizeItemDialog({
   const [extraNotes, setExtraNotes] = useState('')
 
   // Ingredientes efectivos que conforman el platillo (excluyendo insumos técnicos)
-  const effectiveIngredients = (ingredients || []).filter(
-    (ing) => !NON_REMOVABLE_BASICS.includes(ing.trim().toLowerCase())
+  const effectiveIngredients = useMemo(
+    () => (ingredients || []).filter((ing) => !NON_REMOVABLE_BASICS.includes(ing.trim().toLowerCase())),
+    [ingredients]
   )
 
   // Sincronizar estado cuando se abre el diálogo para un ítem
@@ -91,7 +92,7 @@ export function CustomizeItemDialog({
       setExcludedIngredients(detectedExclusions)
       setExtraNotes(remainingNotesParts.join(', '))
     }
-  }, [item, open])
+  }, [item, open, effectiveIngredients])
 
   if (!item) return null
 

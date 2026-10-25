@@ -14,7 +14,6 @@ export async function createCustomerAction(formData: FormData) {
   const email = (formData.get('email') as string)?.trim() || null
   const phone = sanitizeText(formData.get('phone') as string) || null
   const address = sanitizeText(formData.get('address') as string) || null
-  const birthDate = (formData.get('birth_date') as string)?.trim() || null
   const creditLimit = parseFloat(formData.get('credit_limit') as string) || 0
 
   if (!fullName) {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { User, Users, Search, Check, Plus, AlertTriangle, ShieldCheck, DollarSign, X, Phone, CreditCard } from 'lucide-react'
+import { User, AlertTriangle, X, Phone } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -163,7 +163,7 @@ export function CustomerSelector({
               <Combobox
                 options={comboboxOptions}
                 value={selectedCustomerId}
-                onChange={(val, opt) => {
+                onChange={(val) => {
                   const cust = customers.find((c) => c.id === val) || null
                   onSelectCustomer(cust)
                   if (cust?.full_name) onChangeCustomName(cust.full_name)

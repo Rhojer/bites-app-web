@@ -8,24 +8,16 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import {
-  DollarSign,
-  TrendingUp,
-  ShoppingBag,
   AlertTriangle,
   Boxes,
   UtensilsCrossed,
   MonitorCheck,
   Wallet,
   Clock,
-  Sparkles,
   ChevronRight,
   ShieldCheck,
   ChefHat,
   Flame,
-  ArrowRight,
-  Store,
-  Receipt,
-  Truck,
   PlusCircle
 } from 'lucide-react'
 import { SavingsTargetsCard } from '@/components/finances/savings-targets-card'

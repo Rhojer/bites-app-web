@@ -12,16 +12,13 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
   Clock,
-  UtensilsCrossed,
   Receipt,
   User,
   Phone,
-  MapPin,
   Calendar,
   CreditCard,
   ChefHat,
   Printer,
-  X
 } from 'lucide-react'
 import { SaleRecord, formatCustomerDisplay, formatSaleTime } from '@/lib/domain/sales'
 import { formatBs, convertUsdToBs } from '@/lib/bcv'
@@ -44,7 +41,6 @@ export function SaleDetailDialog({
   const customerInfo = formatCustomerDisplay(sale.customer_name, sale.type, sale.table_number)
   const isCredit = sale.payment_status === 'credit'
   const isPaid = sale.payment_status === 'paid'
-  const isPending = sale.payment_status === 'pending'
   const effectiveRate = sale.exchange_rate && sale.exchange_rate > 0 ? sale.exchange_rate : bcvRate
   const totalBs = sale.total_ves || convertUsdToBs(sale.total, effectiveRate)
   const timeFormatted = formatSaleTime(sale.created_at)

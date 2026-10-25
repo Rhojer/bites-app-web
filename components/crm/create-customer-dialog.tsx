@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { PlusCircle, Loader2, UserPlus, DollarSign, Phone, Mail, MapPin, Calendar } from 'lucide-react'
+import { Loader2, UserPlus, Phone, Mail, MapPin, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { ArrowDownRight, ArrowUpRight, Loader2, DollarSign, Calculator } from 'lucide-react'
+import { ArrowDownRight, ArrowUpRight, Loader2, DollarSign } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,

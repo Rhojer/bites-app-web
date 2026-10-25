@@ -4,7 +4,6 @@ import { Navbar } from '@/components/layout/navbar'
 import { CRMView } from '@/components/crm/crm-view'
 import { CreateCustomerDialog } from '@/components/crm/create-customer-dialog'
 import { RecordCreditPaymentDialog } from '@/components/crm/record-credit-payment-dialog'
-import { CreateCampaignDialog } from '@/components/crm/create-campaign-dialog'
 
 export default async function CRMPage() {
   const supabase = await createClient()

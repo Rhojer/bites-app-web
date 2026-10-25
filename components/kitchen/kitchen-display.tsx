@@ -7,12 +7,10 @@ import {
   CheckCircle2,
   AlertTriangle,
   Flame,
-  Bell,
   Volume2,
   VolumeX,
   RefreshCw,
   Search,
-  Filter,
   Layers,
   LayoutGrid,
   Maximize2,
@@ -20,28 +18,22 @@ import {
   ChefHat,
   Bike,
   ShoppingBag,
-  ArrowRight,
   RotateCcw,
-  Sparkles,
   CheckSquare,
   Square,
-  SlidersHorizontal,
-  TrendingUp,
   Timer,
   Utensils
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/client'
 import {
   KitchenOrder,
-  KitchenOrderItem,
   KitchenStatus,
   getKitchenOrdersAction,
   updateOrderKitchenStatusAction,
-  updateOrderItemKitchenStatusAction,
 } from '@/app/kitchen/actions'
 
 interface KitchenDisplayProps {
@@ -95,7 +87,7 @@ export function KitchenDisplay({ initialOrders }: KitchenDisplayProps) {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [lastSyncTime, setLastSyncTime] = useState<Date>(() => new Date())
   const [completedItems, setCompletedItems] = useState<Record<string, boolean>>({})
-  const [isPending, startTransition] = useTransition()
+  const [, startTransition] = useTransition()
 
   // Actualizar el temporizador en vivo cada segundo para cálculo de tiempo transcurrido
   useEffect(() => {

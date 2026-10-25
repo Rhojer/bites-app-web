@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Loader2, Building2, Phone, Mail, FileText, Calendar, UserCheck } from 'lucide-react'
+import { Plus, Loader2, Building2, Phone, Mail, UserCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,

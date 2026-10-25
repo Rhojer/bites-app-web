@@ -5,16 +5,10 @@ import {
   Megaphone,
   Loader2,
   Send,
-  MessageSquare,
   Smartphone,
-  Gift,
-  Flame,
-  Crown,
   Sparkles,
   Users,
   CheckCheck,
-  Calendar,
-  Layers,
   FileText
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'

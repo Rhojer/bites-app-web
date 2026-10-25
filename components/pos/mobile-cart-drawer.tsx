@@ -1,8 +1,7 @@
-﻿'use client'
+'use client'
 
-import { ShoppingBag, ChevronUp, CheckCircle2, Trash2 } from 'lucide-react'
+import { ShoppingBag, ChevronUp, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 
 interface MobileCartDrawerProps {

@@ -7,20 +7,14 @@ import {
   Minus,
   Trash2,
   CheckCircle2,
-  DollarSign,
   Loader2,
   Receipt,
-  User,
-  LayoutGrid,
   ShoppingBag,
-  Sparkles,
   CreditCard,
   Banknote,
   Smartphone,
   Search,
-  ChevronUp,
   X,
-  Tag,
   Coins,
   SlidersHorizontal,
   Scissors,
@@ -31,7 +25,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -40,7 +34,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { processOrderAction } from '@/app/pos/actions'
 import { CustomerSelector, CustomerOption } from '@/components/pos/customer-selector'
 import { ButtonGroup, ButtonGroupItem } from '@/components/ui/button-group'
@@ -121,7 +114,6 @@ export function PosTerminal({
   const [cashTendered, setCashTendered] = useState<string>('')
   const { rate: bcvRate } = useBcvRate()
   const [loading, setLoading] = useState(false)
-  const [successOrderNumber, setSuccessOrderNumber] = useState<string | null>(null)
 
   const finalRecipes = recipes.filter((r) => r.type === 'final_product')
   const categories = Array.from(new Set(finalRecipes.map((r) => r.category || 'General')))
@@ -228,7 +220,7 @@ export function PosTerminal({
         ? 'POS-EFECTIVO-BS'
         : referenceNumber.trim()
 
-      const res = await processOrderAction({
+      await processOrderAction({
         table_id: orderType === 'dine_in' ? selectedTable : null,
         type: orderType,
         items: cart,
@@ -242,7 +234,6 @@ export function PosTerminal({
         reference_number: defaultRef,
       })
 
-      setSuccessOrderNumber(res.orderId.slice(0, 8))
       setCart([])
       setSelectedCustomerId(null)
       setCustomerName('')
@@ -506,12 +497,34 @@ export function PosTerminal({
                   className="h-9 pl-8 text-base sm:text-xs bg-muted/20"
                 />
               </div>
-              <Input
-                placeholder="Mesa / Cliente..."
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                className="h-9 w-32 sm:w-36 text-base sm:text-xs"
-              />
+              {orderType === 'dine_in' && tables && tables.length > 0 ? (
+                <select
+                  value={selectedTable || ''}
+                  onChange={(e) => {
+                    const val = e.target.value || null
+                    setSelectedTable(val)
+                    if (val) {
+                      const found = tables.find((t) => t.id === val)
+                      if (found) setCustomerName(`Mesa ${found.number}${found.name ? ' - ' + found.name : ''}`)
+                    }
+                  }}
+                  className="h-9 w-32 sm:w-36 text-xs rounded-lg border border-input bg-card px-2 py-1 font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  <option value="">Elegir Mesa...</option>
+                  {tables.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      Mesa {t.number} {t.name ? `(${t.name})` : ''}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <Input
+                  placeholder="Mesa / Cliente..."
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  className="h-9 w-32 sm:w-36 text-base sm:text-xs"
+                />
+              )}
             </div>
           </div>
 

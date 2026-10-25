@@ -8,13 +8,9 @@ import {
   CheckCircle2,
   AlertTriangle,
   Search,
-  Filter,
-  DollarSign,
-  Building2,
   Trash2,
   CreditCard,
   Calendar,
-  ExternalLink,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'

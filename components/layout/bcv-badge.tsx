@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { RefreshCw, AlertTriangle, SlidersHorizontal, CheckCircle2, DollarSign, Info } from 'lucide-react';
+import { RefreshCw, AlertTriangle, SlidersHorizontal, DollarSign, Info } from 'lucide-react';
 import { useBcvRate } from '@/lib/hooks/use-bcv-rate';
 import {
   Dialog,
@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 export function BcvBadge() {
-  const { bcvData, rate, formattedRate, loading, isStale, source, date, refresh, setManualRate, clearManualRate } =
+  const { rate, formattedRate, loading, isStale, source, date, refresh, setManualRate, clearManualRate } =
     useBcvRate();
 
   const [dialogOpen, setDialogOpen] = useState(false);

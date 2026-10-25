@@ -1,21 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Clock,
   DollarSign,
   UtensilsCrossed,
   CheckCircle2,
   ChefHat,
   Receipt,
-  MoreVertical,
   Trash2,
-  AlertCircle,
-  Smartphone,
-  CreditCard,
   ShoppingBag,
   Coins,
   Utensils,
@@ -161,8 +155,6 @@ export function ActiveOrdersList({ orders, customers = [] }: ActiveOrdersListPro
             const elapsed = getElapsedMinutes(ord.created_at)
             const isUnpaid = ord.payment_status === 'pending'
             const isCredit = ord.payment_status === 'credit'
-            const isReady = ord.kitchen_status === 'ready'
-            const isDelivered = ord.kitchen_status === 'delivered'
 
             return (
               <div

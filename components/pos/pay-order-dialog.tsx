@@ -70,8 +70,6 @@ export function PayOrderDialog({
   const changeDueUSD = Math.max(0, numericTendered - total)
   const changeDueBs = Math.max(0, numericTendered - totalBs)
 
-  const selectedCustomer = customers.find((c) => c.id === selectedCustomerId) || null
-
   async function handleConfirmPayment() {
     if (!order) return
 

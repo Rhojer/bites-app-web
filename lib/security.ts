@@ -63,7 +63,6 @@ export function validateNumeric(
  */
 export function validateSqlSafeString(str?: string | null): boolean {
   if (!str) return true
-  const upper = str.toUpperCase()
 
   const dangerousPatterns = [
     /(\bOR\b|\bAND\b)\s+(['"]?[^\s=]+['"]?)\s*=\s*\2/i,

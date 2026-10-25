@@ -9,14 +9,12 @@ import {
   ArrowDownRight,
   TrendingDown,
   DollarSign,
-  Percent,
-  CheckCircle2,
   Clock,
   ShieldCheck,
   Search,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 
 export interface PaymentMethodItem {

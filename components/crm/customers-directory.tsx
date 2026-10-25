@@ -4,17 +4,11 @@ import { useState } from 'react'
 import {
   Search,
   Users,
-  DollarSign,
-  CreditCard,
   Crown,
   Cake,
   Phone,
   MessageCircle,
-  AlertTriangle,
   CheckCircle2,
-  MoreVertical,
-  SlidersHorizontal,
-  UserPlus,
   RefreshCw
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
@@ -22,7 +16,6 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { CustomerDetailDialog, CustomerProfile } from './customer-detail-sheet'
 import { RecordCreditPaymentDialog } from './record-credit-payment-dialog'
-import { CreateCustomerDialog } from './create-customer-dialog'
 import { syncAllCustomerMetricsAction } from '@/app/crm/actions'
 
 interface CustomersDirectoryProps {

@@ -47,9 +47,9 @@ export async function getKitchenOrdersAction(): Promise<KitchenOrder[]> {
   // 1. Consultar órdenes, items, recetas y mesas
   const [
     { data: ordersData, error: ordersErr },
-    { data: itemsData, error: itemsErr },
-    { data: recipesData, error: recipesErr },
-    { data: tablesData, error: tablesErr }
+    { data: itemsData },
+    { data: recipesData },
+    { data: tablesData }
   ] = await Promise.all([
     supabase
       .from('orders')

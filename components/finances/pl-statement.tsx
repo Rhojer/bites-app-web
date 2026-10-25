@@ -5,14 +5,9 @@ import {
   TrendingDown,
   DollarSign,
   PieChart,
-  Percent,
-  AlertCircle,
-  CheckCircle2,
   AlertTriangle,
-  Layers,
   Building2,
   Zap,
-  ArrowRight,
   ShieldCheck,
   Flame,
   ReceiptText,
@@ -58,7 +53,6 @@ export function PLStatement({ data }: PLStatementProps) {
   } = data
 
   const foodCostRatio = totalRevenue > 0 ? (totalFoodCost / totalRevenue) * 100 : 0
-  const opexRatio = totalRevenue > 0 ? (totalExpenses / totalRevenue) * 100 : 0
   const isProfitable = netProfit >= 0
 
   // Diagnósticos automáticos basados en KPIs gastronómicos estándar

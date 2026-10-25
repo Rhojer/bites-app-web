@@ -6,7 +6,6 @@ import {
   MessageSquare,
   Smartphone,
   Mail,
-  Send,
   Calendar,
   Users,
   CheckCircle2,
@@ -15,7 +14,6 @@ import {
   Copy,
   Check,
   Share2,
-  Filter
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'

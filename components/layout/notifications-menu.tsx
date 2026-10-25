@@ -8,7 +8,6 @@ import {
   CheckCheck,
   AlertTriangle,
   ChefHat,
-  Wallet,
   RefreshCw,
   X,
   CheckCircle2,

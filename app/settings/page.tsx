@@ -5,14 +5,11 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-  Settings,
   Store,
   ChefHat,
   Volume2,
   Database,
-  Sparkles,
   Info,
-  Clock,
 } from 'lucide-react'
 
 export default function SettingsPage() {

@@ -5,12 +5,7 @@ import {
   Target,
   TrendingUp,
   ShieldCheck,
-  AlertCircle,
-  Sparkles,
-  DollarSign,
-  Calendar,
   Settings2,
-  CheckCircle2,
   PieChart
 } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'

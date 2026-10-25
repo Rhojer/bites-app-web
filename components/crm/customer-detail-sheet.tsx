@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import {
-  User,
   Phone,
   Mail,
   MapPin,
@@ -10,16 +9,11 @@ import {
   DollarSign,
   ShoppingBag,
   TrendingUp,
-  CreditCard,
   Edit2,
-  ExternalLink,
   MessageCircle,
-  ShieldCheck,
   CheckCircle2,
-  AlertTriangle,
   Loader2,
-  Receipt,
-  X
+  Receipt
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'

@@ -8,9 +8,7 @@ import {
   Mail,
   Calendar,
   Trash2,
-  FileText,
   AlertCircle,
-  Plus,
   Loader2,
   UserCheck,
 } from 'lucide-react'
@@ -140,7 +138,6 @@ export function SuppliersTable({ suppliers, bills = [] }: SuppliersTableProps) {
               ) : (
                 filtered.map((sup) => {
                   const billInfo = billsBySupplier[sup.id] || { totalCount: 0, pendingCount: 0, pendingAmount: 0 }
-                  const hasBills = billInfo.totalCount > 0
 
                   return (
                     <tr key={sup.id} className="hover:bg-muted/30 transition-colors">

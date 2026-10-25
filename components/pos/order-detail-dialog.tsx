@@ -13,13 +13,10 @@ import { Badge } from '@/components/ui/badge'
 import {
   DollarSign,
   Clock,
-  UtensilsCrossed,
   Receipt,
-  ChefHat,
   CheckCircle2,
   AlertCircle,
   Coins,
-  FileText,
   Utensils,
   ShoppingBag,
   Bike
@@ -49,7 +46,6 @@ export function OrderDetailDialog({
   const effectiveRate = bcvRate || liveBcvRate
   const isUnpaid = order.payment_status === 'pending'
   const isCredit = order.payment_status === 'credit'
-  const isPaid = order.payment_status === 'paid'
   const totalBs = convertUsdToBs(order.total, effectiveRate)
 
   function getElapsedMinutes(createdAt: string) {
