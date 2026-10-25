@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -15,7 +15,7 @@ import {
   ChefHat,
   Receipt,
   LogOut,
-  Loader2
+  Loader2,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -79,6 +79,44 @@ export function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
   const pathname = usePathname()
   const router = useRouter()
   const [loggingOut, setLoggingOut] = useState(false)
+  const [touchOptimisticIndex, setTouchOptimisticIndex] = useState<number | null>(null)
+  const [indicatorTop, setIndicatorTop] = useState<number>(0)
+  const itemRefs = useRef<(HTMLAnchorElement | null)[]>([])
+
+  // Calculate active route index
+  const routeActiveIndex = navigationItems.findIndex((item) => {
+    if (!pathname) return false
+    if (item.href === '/') {
+      return pathname === '/'
+    }
+    return pathname === item.href || pathname.startsWith(item.href + '/')
+  })
+
+  // Optimistic index on immediate click for instant responsiveness
+  const activeIndex = touchOptimisticIndex !== null ? touchOptimisticIndex : routeActiveIndex
+
+  // Clear optimistic index when pathname updates to match target
+  useEffect(() => {
+    setTouchOptimisticIndex(null)
+  }, [pathname])
+
+  // Update sliding pill position
+  useEffect(() => {
+    const updatePosition = () => {
+      if (activeIndex >= 0) {
+        const el = itemRefs.current[activeIndex]
+        if (el && el.offsetTop > 0) {
+          setIndicatorTop(el.offsetTop)
+        } else {
+          setIndicatorTop(activeIndex * 50)
+        }
+      }
+    }
+
+    updatePosition()
+    window.addEventListener('resize', updatePosition)
+    return () => window.removeEventListener('resize', updatePosition)
+  }, [activeIndex])
 
   const handleLogout = async () => {
     try {
@@ -122,43 +160,66 @@ export function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
         </div>
       </div>
 
-      {/* Navigation Links */}
-      <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto">
+      {/* Navigation Links con riel tipo píldora estilo iOS */}
+      <nav className="flex-1 p-3 overflow-y-auto" aria-label="Menú del Sistema">
         <p className="px-3 text-xs font-bold text-muted-foreground tracking-wider uppercase mb-2">
           Menú Principal
         </p>
-        {navigationItems.map((item) => {
-          const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href))
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              onClick={onItemClick}
-              className={`flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-medium transition-colors duration-150 active:scale-[0.98] ${
-                isActive
-                  ? 'bg-primary text-primary-foreground shadow-xs font-semibold'
-                  : 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <item.icon className={`size-5 shrink-0 ${isActive ? 'text-primary-foreground' : 'text-muted-foreground'}`} />
-                <span className="font-semibold text-sm tracking-tight">{item.name}</span>
-              </div>
-              {item.badge && (
-                <Badge
-                  variant="outline"
-                  className={`text-[9px] px-1.5 py-0 font-bold ${
-                    isActive
-                      ? 'bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30'
-                      : 'bg-muted text-muted-foreground border-border/50'
-                  }`}
-                >
-                  {item.badge}
-                </Badge>
-              )}
-            </Link>
-          )
-        })}
+        <div className="relative flex flex-col gap-1.5">
+          {/* Sliding Pill Indicator (Cápsula activa) */}
+          {activeIndex >= 0 && activeIndex < navigationItems.length && (
+            <div
+              data-testid="sidebar-pill-indicator"
+              className="absolute left-0 right-0 h-11 rounded-full bg-primary shadow-md shadow-primary/25 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] pointer-events-none"
+              style={{
+                transform: `translate3d(0, ${indicatorTop}px, 0)`,
+              }}
+            />
+          )}
+
+          {navigationItems.map((item, idx) => {
+            const isActive = activeIndex === idx
+            return (
+              <Link
+                key={item.name}
+                ref={(el) => {
+                  itemRefs.current[idx] = el
+                }}
+                href={item.href}
+                onClick={() => {
+                  setTouchOptimisticIndex(idx)
+                  onItemClick?.()
+                }}
+                className={`relative z-10 flex items-center justify-between h-11 px-4 rounded-full text-sm select-none transition-all duration-200 active:scale-[0.98] ${
+                  isActive
+                    ? 'text-primary-foreground font-bold'
+                    : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground font-medium'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <item.icon
+                    className={`size-5 shrink-0 transition-transform duration-200 ${
+                      isActive ? 'scale-110 text-primary-foreground' : 'text-muted-foreground'
+                    }`}
+                  />
+                  <span className="font-semibold text-sm tracking-tight">{item.name}</span>
+                </div>
+                {item.badge && (
+                  <Badge
+                    variant="outline"
+                    className={`text-[9px] px-1.5 py-0 font-bold ${
+                      isActive
+                        ? 'bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30'
+                        : 'bg-muted text-muted-foreground border-border/50'
+                    }`}
+                  >
+                    {item.badge}
+                  </Badge>
+                )}
+              </Link>
+            )
+          })}
+        </div>
       </nav>
 
       {/* Footer: Administrador + Cerrar Sesión + Estado del Sistema */}
@@ -180,7 +241,7 @@ export function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
           size="sm"
           onClick={handleLogout}
           disabled={loggingOut}
-          className="w-full justify-start gap-2.5 text-xs font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30 transition-colors cursor-pointer"
+          className="w-full justify-start gap-2.5 text-xs font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30 transition-colors cursor-pointer rounded-full"
         >
           {loggingOut ? (
             <Loader2 className="size-4 animate-spin text-destructive shrink-0" />
@@ -210,4 +271,3 @@ export function Sidebar() {
     </aside>
   )
 }
-

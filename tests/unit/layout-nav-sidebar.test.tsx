@@ -82,4 +82,23 @@ describe('Navbar y Sidebar Layout', () => {
       expect(mockPush).toHaveBeenCalledWith('/login')
     })
   })
+
+  it('el Sidebar cuenta con píldora indicadora deslizante y botones tipo píldora', () => {
+    render(<SidebarContent />)
+
+    // Verifica que la píldora indicadora exista
+    const indicator = screen.getByTestId('sidebar-pill-indicator')
+    expect(indicator).toBeDefined()
+    expect(indicator.style.transform).toBe('translate3d(0, 0px, 0)')
+
+    // Verifica que los botones de navegación tengan el estilo de píldora rounded-full
+    const resumenLink = screen.getByText('Resumen').closest('a')
+    expect(resumenLink?.className).toContain('rounded-full')
+
+    // Al hacer clic en otro ítem (ej: 'Tomar Pedidos' que es índice 1), la píldora se mueve
+    const posLink = screen.getByText('Tomar Pedidos')
+    fireEvent.click(posLink)
+
+    expect(indicator.style.transform).toBe('translate3d(0, 50px, 0)')
+  })
 })
